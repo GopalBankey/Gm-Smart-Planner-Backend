@@ -1,0 +1,14 @@
+package com.gmsmartplanner.enums;
+
+public enum ErrorCode {
+
+    RESOURCE_NOT_FOUND,
+    DUPLICATE_RESOURCE,
+    VALIDATION_FAILED,
+    INTERNAL_SERVER_ERROR,
+    UNAUTHORIZED,
+    FORBIDDEN,
+    NOT_FOUND,
+    METHOD_NOT_ALLOWED,
+    BAD_REQUEST
+}
