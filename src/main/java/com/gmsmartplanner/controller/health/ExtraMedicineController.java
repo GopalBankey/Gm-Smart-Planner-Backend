@@ -5,6 +5,7 @@ import com.gmsmartplanner.dto.request.health.UpdateExtraMedicineRequestDTO;
 import com.gmsmartplanner.dto.response.health.ExtraMedicineResponseDTO;
 import com.gmsmartplanner.enums.health.MedicineForm;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.ExtraMedicineService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,9 @@ public class ExtraMedicineController {
     private final ExtraMedicineService
             extraMedicineService;
 
+    private final AccessUserService
+            accessUserService;
+
     // =====================================
     // CREATE
     // =====================================
@@ -33,11 +37,23 @@ public class ExtraMedicineController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
+
             @ModelAttribute
             @Valid
             CreateExtraMedicineRequestDTO dto
 
     ) {
+
+        accessUserService
+                .checkCreatePermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -55,7 +71,13 @@ public class ExtraMedicineController {
                                 extraMedicineService
                                         .createMedicine(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 dto
                                         )
@@ -73,9 +95,21 @@ public class ExtraMedicineController {
     public ResponseEntity<ApiResponse<List<ExtraMedicineResponseDTO>>>
     getAll(
 
-            Authentication authentication
+            Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -93,7 +127,13 @@ public class ExtraMedicineController {
                                 extraMedicineService
                                         .getMedicines(
 
-                                                authentication.getName()
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        )
                                         )
                         )
 
@@ -111,10 +151,22 @@ public class ExtraMedicineController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
+
             @PathVariable
             Long medicineId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -132,7 +184,13 @@ public class ExtraMedicineController {
                                 extraMedicineService
                                         .getMedicine(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId
                                         )
@@ -152,6 +210,12 @@ public class ExtraMedicineController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
+
             @PathVariable
             Long medicineId,
 
@@ -159,6 +223,12 @@ public class ExtraMedicineController {
             UpdateExtraMedicineRequestDTO dto
 
     ) {
+
+        accessUserService
+                .checkUpdatePermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -176,7 +246,13 @@ public class ExtraMedicineController {
                                 extraMedicineService
                                         .updateMedicine(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId,
 
@@ -198,15 +274,33 @@ public class ExtraMedicineController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
+
             @PathVariable
             Long medicineId
 
     ) {
 
+        accessUserService
+                .checkDeletePermission(
+                        authentication.getName(),
+                        accessId
+                );
+
         extraMedicineService
                 .deleteMedicine(
 
-                        authentication.getName(),
+                        accessUserService
+                                .getEffectiveUsername(
+
+                                        authentication.getName(),
+
+                                        accessId
+                                ),
 
                         medicineId
                 );

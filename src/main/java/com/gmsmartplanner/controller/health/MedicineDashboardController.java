@@ -2,6 +2,7 @@ package com.gmsmartplanner.controller.health;
 
 import com.gmsmartplanner.dto.response.health.MedicineDashboardResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.MedicineDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,9 @@ public class MedicineDashboardController {
     private final MedicineDashboardService
             medicineDashboardService;
 
+    private final AccessUserService
+            accessUserService;
+
     // =====================================
     // DASHBOARD
     // =====================================
@@ -29,15 +33,37 @@ public class MedicineDashboardController {
 
     getDashboard(
 
-            Authentication authentication
+            Authentication authentication,
+
+            @RequestHeader(
+
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+
+            )
+
+            Long accessId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication
+                                .getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
                 ApiResponse
 
                         .<MedicineDashboardResponseDTO>
+
                                 builder()
 
                         .success(
@@ -45,16 +71,25 @@ public class MedicineDashboardController {
                         )
 
                         .message(
+
                                 "Medicine dashboard fetched successfully"
                         )
 
                         .data(
 
                                 medicineDashboardService
+
                                         .getDashboard(
 
-                                                authentication
-                                                        .getName()
+                                                accessUserService
+
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        )
                                         )
                         )
 

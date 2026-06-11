@@ -4,6 +4,7 @@ import com.gmsmartplanner.dto.request.health.CreateHospitalRequestDTO;
 import com.gmsmartplanner.dto.request.health.UpdateHospitalRequestDTO;
 import com.gmsmartplanner.dto.response.health.HospitalResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.HospitalService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,9 @@ public class HospitalController {
     private final HospitalService
             hospitalService;
 
+    private final AccessUserService
+            accessUserService;
+
     // =====================================
     // CREATE
     // =====================================
@@ -31,17 +35,41 @@ public class HospitalController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @Valid
             @RequestBody
             CreateHospitalRequestDTO dto
 
     ) {
 
+        accessUserService
+                .checkCreatePermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
+
         HospitalResponseDTO response =
+
                 hospitalService
                         .createHospital(
 
-                                authentication.getName(),
+                                accessUserService
+                                        .getEffectiveUsername(
+
+                                                authentication.getName(),
+
+                                                accessId
+                                        ),
 
                                 dto
                         );
@@ -57,7 +85,9 @@ public class HospitalController {
                                 "Hospital created successfully"
                         )
 
-                        .data(response)
+                        .data(
+                                response
+                        )
 
                         .build()
         );
@@ -71,9 +101,26 @@ public class HospitalController {
     public ResponseEntity<ApiResponse<List<HospitalResponseDTO>>>
     getHospitals(
 
-            Authentication authentication
+            Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -91,7 +138,13 @@ public class HospitalController {
                                 hospitalService
                                         .getHospitals(
 
-                                                authentication.getName()
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        )
                                         )
                         )
 
@@ -109,10 +162,27 @@ public class HospitalController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @PathVariable
             Long hospitalId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -130,7 +200,13 @@ public class HospitalController {
                                 hospitalService
                                         .getHospital(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 hospitalId
                                         )
@@ -150,6 +226,15 @@ public class HospitalController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @PathVariable
             Long hospitalId,
 
@@ -157,6 +242,14 @@ public class HospitalController {
             UpdateHospitalRequestDTO dto
 
     ) {
+
+        accessUserService
+                .checkUpdatePermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -174,7 +267,13 @@ public class HospitalController {
                                 hospitalService
                                         .updateHospital(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 hospitalId,
 
@@ -196,15 +295,38 @@ public class HospitalController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @PathVariable
             Long hospitalId
 
     ) {
 
+        accessUserService
+                .checkDeletePermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
+
         hospitalService
                 .deleteHospital(
 
-                        authentication.getName(),
+                        accessUserService
+                                .getEffectiveUsername(
+
+                                        authentication.getName(),
+
+                                        accessId
+                                ),
 
                         hospitalId
                 );

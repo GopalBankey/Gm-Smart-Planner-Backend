@@ -4,6 +4,7 @@ import com.gmsmartplanner.dto.request.health.CreateAppointmentRequestDTO;
 import com.gmsmartplanner.dto.request.health.UpdateAppointmentRequestDTO;
 import com.gmsmartplanner.dto.response.health.AppointmentResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(
@@ -21,6 +23,9 @@ public class AppointmentController {
 
     private final AppointmentService
             appointmentService;
+
+    private final AccessUserService
+            accessUserService;
 
     // =====================================
     // CREATE
@@ -32,10 +37,15 @@ public class AppointmentController {
                     AppointmentResponseDTO
                     >
             >
-
     createAppointment(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
 
             @Valid
             @RequestBody
@@ -43,16 +53,19 @@ public class AppointmentController {
 
     ) {
 
+        accessUserService
+                .checkCreatePermission(
+                        authentication.getName(),
+                        accessId
+                );
+
         return ResponseEntity.ok(
 
                 ApiResponse
-
                         .<AppointmentResponseDTO>
                                 builder()
 
-                        .success(
-                                true
-                        )
+                        .success(true)
 
                         .message(
                                 "Appointment created successfully"
@@ -63,7 +76,13 @@ public class AppointmentController {
                                 appointmentService
                                         .createAppointment(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 dto
                                         )
@@ -85,25 +104,33 @@ public class AppointmentController {
                             >
                     >
             >
-
     getAppointments(
 
-            Authentication authentication
+            Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
                 ApiResponse
-
                         .<List<
                                 AppointmentResponseDTO
                                 >>
                                 builder()
 
-                        .success(
-                                true
-                        )
+                        .success(true)
 
                         .message(
                                 "Appointments fetched successfully"
@@ -114,7 +141,13 @@ public class AppointmentController {
                                 appointmentService
                                         .getAppointments(
 
-                                                authentication.getName()
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        )
                                         )
                         )
 
@@ -129,32 +162,39 @@ public class AppointmentController {
     @GetMapping(
             "/{appointmentId}"
     )
-
     public ResponseEntity<
             ApiResponse<
                     AppointmentResponseDTO
                     >
             >
-
     getAppointment(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
 
             @PathVariable
             Long appointmentId
 
     ) {
 
+        accessUserService
+                .checkViewPermission(
+                        authentication.getName(),
+                        accessId
+                );
+
         return ResponseEntity.ok(
 
                 ApiResponse
-
                         .<AppointmentResponseDTO>
                                 builder()
 
-                        .success(
-                                true
-                        )
+                        .success(true)
 
                         .message(
                                 "Appointment fetched successfully"
@@ -165,7 +205,13 @@ public class AppointmentController {
                                 appointmentService
                                         .getAppointment(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 appointmentId
                                         )
@@ -182,16 +228,20 @@ public class AppointmentController {
     @PatchMapping(
             "/{appointmentId}"
     )
-
     public ResponseEntity<
             ApiResponse<
                     AppointmentResponseDTO
                     >
             >
-
     updateAppointment(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
 
             @PathVariable
             Long appointmentId,
@@ -202,16 +252,19 @@ public class AppointmentController {
 
     ) {
 
+        accessUserService
+                .checkUpdatePermission(
+                        authentication.getName(),
+                        accessId
+                );
+
         return ResponseEntity.ok(
 
                 ApiResponse
-
                         .<AppointmentResponseDTO>
                                 builder()
 
-                        .success(
-                                true
-                        )
+                        .success(true)
 
                         .message(
                                 "Appointment updated successfully"
@@ -222,7 +275,13 @@ public class AppointmentController {
                                 appointmentService
                                         .updateAppointment(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 appointmentId,
 
@@ -241,32 +300,39 @@ public class AppointmentController {
     @PatchMapping(
             "/{appointmentId}/complete"
     )
-
     public ResponseEntity<
             ApiResponse<
                     AppointmentResponseDTO
                     >
             >
-
     completeAppointment(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
 
             @PathVariable
             Long appointmentId
 
     ) {
 
+        accessUserService
+                .checkUpdatePermission(
+                        authentication.getName(),
+                        accessId
+                );
+
         return ResponseEntity.ok(
 
                 ApiResponse
-
                         .<AppointmentResponseDTO>
                                 builder()
 
-                        .success(
-                                true
-                        )
+                        .success(true)
 
                         .message(
                                 "Appointment completed successfully"
@@ -277,7 +343,13 @@ public class AppointmentController {
                                 appointmentService
                                         .completeAppointment(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 appointmentId
                                         )
@@ -294,26 +366,42 @@ public class AppointmentController {
     @DeleteMapping(
             "/{appointmentId}"
     )
-
     public ResponseEntity<
             ApiResponse<
                     Void
                     >
             >
-
     deleteAppointment(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
 
             @PathVariable
             Long appointmentId
 
     ) {
 
+        accessUserService
+                .checkDeletePermission(
+                        authentication.getName(),
+                        accessId
+                );
+
         appointmentService
                 .deleteAppointment(
 
-                        authentication.getName(),
+                        accessUserService
+                                .getEffectiveUsername(
+
+                                        authentication.getName(),
+
+                                        accessId
+                                ),
 
                         appointmentId
                 );
@@ -321,13 +409,10 @@ public class AppointmentController {
         return ResponseEntity.ok(
 
                 ApiResponse
-
                         .<Void>
                                 builder()
 
-                        .success(
-                                true
-                        )
+                        .success(true)
 
                         .message(
                                 "Appointment deleted successfully"

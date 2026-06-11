@@ -2,6 +2,7 @@ package com.gmsmartplanner.controller.health;
 
 import com.gmsmartplanner.dto.response.health.MedicineHistoryResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.MedicineHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,9 +18,11 @@ import java.util.List;
 )
 public class MedicineHistoryController {
 
-    private final
-    MedicineHistoryService
+    private final MedicineHistoryService
             service;
+
+    private final AccessUserService
+            accessUserService;
 
     // =====================================
     // TAKE
@@ -28,16 +31,22 @@ public class MedicineHistoryController {
     @PostMapping(
             "/{medicineId}/take/{scheduleId}"
     )
-
     public ResponseEntity<
             ApiResponse<
                     MedicineHistoryResponseDTO
                     >
             >
-
     take(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+                    required =
+                            false
+            )
+            Long accessId,
 
             @PathVariable
             Long medicineId,
@@ -46,6 +55,15 @@ public class MedicineHistoryController {
             Long scheduleId
 
     ) {
+
+        accessUserService
+                .checkTakePermission(
+
+                        authentication
+                                .getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -67,7 +85,14 @@ public class MedicineHistoryController {
                                 service
                                         .takeMedicine(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId,
 
@@ -86,16 +111,22 @@ public class MedicineHistoryController {
     @PostMapping(
             "/{medicineId}/skip/{scheduleId}"
     )
-
     public ResponseEntity<
             ApiResponse<
                     MedicineHistoryResponseDTO
                     >
             >
-
     skip(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+                    required =
+                            false
+            )
+            Long accessId,
 
             @PathVariable
             Long medicineId,
@@ -104,6 +135,15 @@ public class MedicineHistoryController {
             Long scheduleId
 
     ) {
+
+        accessUserService
+                .checkTakePermission(
+
+                        authentication
+                                .getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -125,7 +165,14 @@ public class MedicineHistoryController {
                                 service
                                         .skipMedicine(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId,
 
@@ -138,13 +185,12 @@ public class MedicineHistoryController {
     }
 
     // =====================================
-    // GET ALL
+    // HISTORY
     // =====================================
 
     @GetMapping(
             "/history"
     )
-
     public ResponseEntity<
             ApiResponse<
                     List<
@@ -152,12 +198,28 @@ public class MedicineHistoryController {
                             >
                     >
             >
-
     getHistory(
 
-            Authentication authentication
+            Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+                    required =
+                            false
+            )
+            Long accessId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication
+                                .getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -181,7 +243,14 @@ public class MedicineHistoryController {
                                 service
                                         .getHistory(
 
-                                                authentication.getName()
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        )
                                         )
                         )
 
@@ -190,13 +259,12 @@ public class MedicineHistoryController {
     }
 
     // =====================================
-    // GET MEDICINE HISTORY
+    // MEDICINE HISTORY
     // =====================================
 
     @GetMapping(
             "/{medicineId}/history"
     )
-
     public ResponseEntity<
             ApiResponse<
                     List<
@@ -204,15 +272,31 @@ public class MedicineHistoryController {
                             >
                     >
             >
-
     getMedicineHistory(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+                    required =
+                            false
+            )
+            Long accessId,
 
             @PathVariable
             Long medicineId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication
+                                .getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -236,7 +320,14 @@ public class MedicineHistoryController {
                                 service
                                         .getMedicineHistory(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId
                                         )

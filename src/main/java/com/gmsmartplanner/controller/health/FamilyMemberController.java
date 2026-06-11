@@ -6,6 +6,7 @@ import com.gmsmartplanner.dto.response.health.FamilyMemberResponseDTO;
 import com.gmsmartplanner.enums.BloodGroup;
 import com.gmsmartplanner.enums.health.FamilyRelation;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.FamilyMemberService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,9 @@ public class FamilyMemberController {
     private final FamilyMemberService
             familyMemberService;
 
+    private final AccessUserService
+            accessUserService;
+
     // =====================================
     // CREATE
     // =====================================
@@ -34,11 +38,23 @@ public class FamilyMemberController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
+
             @ModelAttribute
             @Valid
             CreateFamilyMemberRequestDTO dto
 
     ) {
+
+        accessUserService
+                .checkCreatePermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -56,7 +72,13 @@ public class FamilyMemberController {
                                 familyMemberService
                                         .createFamilyMember(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 dto
                                         )
@@ -74,9 +96,21 @@ public class FamilyMemberController {
     public ResponseEntity<ApiResponse<List<FamilyMemberResponseDTO>>>
     getAll(
 
-            Authentication authentication
+            Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -94,7 +128,13 @@ public class FamilyMemberController {
                                 familyMemberService
                                         .getFamilyMembers(
 
-                                                authentication.getName()
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        )
                                         )
                         )
 
@@ -112,10 +152,22 @@ public class FamilyMemberController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
+
             @PathVariable
             Long memberId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -133,7 +185,13 @@ public class FamilyMemberController {
                                 familyMemberService
                                         .getFamilyMember(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 memberId
                                         )
@@ -153,6 +211,12 @@ public class FamilyMemberController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
+
             @PathVariable
             Long memberId,
 
@@ -160,6 +224,12 @@ public class FamilyMemberController {
             UpdateFamilyMemberRequestDTO dto
 
     ) {
+
+        accessUserService
+                .checkUpdatePermission(
+                        authentication.getName(),
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -177,7 +247,13 @@ public class FamilyMemberController {
                                 familyMemberService
                                         .updateFamilyMember(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 memberId,
 
@@ -199,15 +275,33 @@ public class FamilyMemberController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId,
+
             @PathVariable
             Long memberId
 
     ) {
 
+        accessUserService
+                .checkDeletePermission(
+                        authentication.getName(),
+                        accessId
+                );
+
         familyMemberService
                 .deleteFamilyMember(
 
-                        authentication.getName(),
+                        accessUserService
+                                .getEffectiveUsername(
+
+                                        authentication.getName(),
+
+                                        accessId
+                                ),
 
                         memberId
                 );
@@ -249,14 +343,11 @@ public class FamilyMemberController {
                         .data(
 
                                 Arrays.stream(
-
                                                 FamilyRelation.values()
                                         )
-
                                         .map(
                                                 Enum::name
                                         )
-
                                         .toList()
                         )
 
@@ -286,14 +377,11 @@ public class FamilyMemberController {
                         .data(
 
                                 Arrays.stream(
-
                                                 BloodGroup.values()
                                         )
-
                                         .map(
                                                 Enum::name
                                         )
-
                                         .toList()
                         )
 

@@ -4,6 +4,7 @@ import com.gmsmartplanner.dto.request.health.CreateReportRequestDTO;
 import com.gmsmartplanner.dto.request.health.UpdateReportRequestDTO;
 import com.gmsmartplanner.dto.response.health.ReportResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.ReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,11 @@ import java.util.List;
 @RequestMapping("/api/v1/reports")
 public class ReportController {
 
-    private final ReportService reportService;
+    private final ReportService
+            reportService;
+
+    private final AccessUserService
+            accessUserService;
 
     // =====================================
     // CREATE
@@ -29,27 +34,57 @@ public class ReportController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @ModelAttribute
             CreateReportRequestDTO dto
 
     ) {
 
+        accessUserService
+                .checkCreatePermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
+
         return ResponseEntity.ok(
 
                 ApiResponse
                         .<ReportResponseDTO>builder()
+
                         .success(true)
-                        .message("Report created successfully")
+
+                        .message(
+                                "Report created successfully"
+                        )
+
                         .data(
 
                                 reportService
                                         .createReport(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 dto
                                         )
                         )
+
                         .build()
         );
     }
@@ -62,23 +97,54 @@ public class ReportController {
     public ResponseEntity<ApiResponse<List<ReportResponseDTO>>>
     getAll(
 
-            Authentication authentication
+            Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
                 ApiResponse
                         .<List<ReportResponseDTO>>builder()
+
                         .success(true)
-                        .message("Reports fetched successfully")
+
+                        .message(
+                                "Reports fetched successfully"
+                        )
+
                         .data(
 
                                 reportService
                                         .getReports(
-                                                authentication.getName()
+
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        )
                                         )
                         )
+
                         .build()
         );
     }
@@ -93,27 +159,57 @@ public class ReportController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @PathVariable
             Long reportId
 
     ) {
 
+        accessUserService
+                .checkViewPermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
+
         return ResponseEntity.ok(
 
                 ApiResponse
                         .<ReportResponseDTO>builder()
+
                         .success(true)
-                        .message("Report fetched successfully")
+
+                        .message(
+                                "Report fetched successfully"
+                        )
+
                         .data(
 
                                 reportService
                                         .getReport(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 reportId
                                         )
                         )
+
                         .build()
         );
     }
@@ -128,6 +224,15 @@ public class ReportController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @PathVariable
             Long reportId,
 
@@ -136,24 +241,45 @@ public class ReportController {
 
     ) {
 
+        accessUserService
+                .checkUpdatePermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
+
         return ResponseEntity.ok(
 
                 ApiResponse
                         .<ReportResponseDTO>builder()
+
                         .success(true)
-                        .message("Report updated successfully")
+
+                        .message(
+                                "Report updated successfully"
+                        )
+
                         .data(
 
                                 reportService
                                         .updateReport(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 reportId,
 
                                                 dto
                                         )
                         )
+
                         .build()
         );
     }
@@ -168,24 +294,54 @@ public class ReportController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @PathVariable
             Long reportId
 
     ) {
 
-        reportService.deleteReport(
+        accessUserService
+                .checkDeletePermission(
 
-                authentication.getName(),
+                        authentication.getName(),
 
-                reportId
-        );
+                        accessId
+                );
+
+        reportService
+                .deleteReport(
+
+                        accessUserService
+                                .getEffectiveUsername(
+
+                                        authentication
+                                                .getName(),
+
+                                        accessId
+                                ),
+
+                        reportId
+                );
 
         return ResponseEntity.ok(
 
                 ApiResponse
                         .<Void>builder()
+
                         .success(true)
-                        .message("Report deleted successfully")
+
+                        .message(
+                                "Report deleted successfully"
+                        )
+
                         .build()
         );
     }

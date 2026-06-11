@@ -3,6 +3,7 @@ package com.gmsmartplanner.controller.health;
 import com.gmsmartplanner.dto.request.health.UpdateMedicineRefillReminderRequestDTO;
 import com.gmsmartplanner.dto.response.health.MedicineRefillReminderResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.MedicineRefillReminderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,10 @@ MedicineRefillReminderController {
     MedicineRefillReminderService
             service;
 
+    private final
+    AccessUserService
+            accessUserService;
+
     // =====================================
     // GET
     // =====================================
@@ -28,21 +33,37 @@ MedicineRefillReminderController {
     @GetMapping(
             "/{medicineId}/refill"
     )
-
     public ResponseEntity<
             ApiResponse<
                     MedicineRefillReminderResponseDTO
                     >
             >
-
     get(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
 
             @PathVariable
             Long medicineId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication
+                                .getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -64,7 +85,14 @@ MedicineRefillReminderController {
                                 service
                                         .getRefillReminder(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId
                                         )
@@ -81,16 +109,23 @@ MedicineRefillReminderController {
     @PatchMapping(
             "/{medicineId}/refill"
     )
-
     public ResponseEntity<
             ApiResponse<
                     MedicineRefillReminderResponseDTO
                     >
             >
-
     update(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
 
             @PathVariable
             Long medicineId,
@@ -99,6 +134,15 @@ MedicineRefillReminderController {
             UpdateMedicineRefillReminderRequestDTO dto
 
     ) {
+
+        accessUserService
+                .checkUpdatePermission(
+
+                        authentication
+                                .getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -120,7 +164,14 @@ MedicineRefillReminderController {
                                 service
                                         .updateRefillReminder(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId,
 

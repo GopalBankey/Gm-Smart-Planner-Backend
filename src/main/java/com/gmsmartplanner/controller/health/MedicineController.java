@@ -6,8 +6,8 @@ import com.gmsmartplanner.dto.response.health.MedicineResponseDTO;
 import com.gmsmartplanner.enums.health.MealType;
 import com.gmsmartplanner.enums.health.MedicineForm;
 import com.gmsmartplanner.payload.ApiResponse;
+import com.gmsmartplanner.service.AccessUserService;
 import com.gmsmartplanner.service.health.MedicineService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,6 +24,9 @@ public class MedicineController {
     private final MedicineService
             medicineService;
 
+    private final AccessUserService
+            accessUserService;
+
     // =====================================
     // CREATE
     // =====================================
@@ -38,10 +41,27 @@ public class MedicineController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @ModelAttribute
             CreateMedicineRequestDTO dto
 
     ) {
+
+        accessUserService
+                .checkCreatePermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -59,7 +79,13 @@ public class MedicineController {
                                 medicineService
                                         .createMedicine(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 dto
                                         )
@@ -77,9 +103,26 @@ public class MedicineController {
     public ResponseEntity<ApiResponse<List<MedicineResponseDTO>>>
     getAll(
 
-            Authentication authentication
+            Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -97,7 +140,13 @@ public class MedicineController {
                                 medicineService
                                         .getMedicines(
 
-                                                authentication.getName()
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        )
                                         )
                         )
 
@@ -106,7 +155,7 @@ public class MedicineController {
     }
 
     // =====================================
-    // GET BY ID
+    // GET
     // =====================================
 
     @GetMapping("/{medicineId}")
@@ -115,10 +164,27 @@ public class MedicineController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @PathVariable
             Long medicineId
 
     ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -136,7 +202,13 @@ public class MedicineController {
                                 medicineService
                                         .getMedicine(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId
                                         )
@@ -151,14 +223,26 @@ public class MedicineController {
     // =====================================
 
     @PatchMapping(
-            value = "/{medicineId}",
+            value =
+                    "/{medicineId}",
+
             consumes = {
                     "multipart/form-data"
             }
-    )    public ResponseEntity<ApiResponse<MedicineResponseDTO>>
+    )
+    public ResponseEntity<ApiResponse<MedicineResponseDTO>>
     update(
 
             Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
 
             @PathVariable
             Long medicineId,
@@ -167,6 +251,14 @@ public class MedicineController {
             UpdateMedicineRequestDTO dto
 
     ) {
+
+        accessUserService
+                .checkUpdatePermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
 
         return ResponseEntity.ok(
 
@@ -184,7 +276,13 @@ public class MedicineController {
                                 medicineService
                                         .updateMedicine(
 
-                                                authentication.getName(),
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        ),
 
                                                 medicineId,
 
@@ -206,15 +304,38 @@ public class MedicineController {
 
             Authentication authentication,
 
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+
+                    required =
+                            false
+            )
+            Long accessId,
+
             @PathVariable
             Long medicineId
 
     ) {
 
+        accessUserService
+                .checkDeletePermission(
+
+                        authentication.getName(),
+
+                        accessId
+                );
+
         medicineService
                 .deleteMedicine(
 
-                        authentication.getName(),
+                        accessUserService
+                                .getEffectiveUsername(
+
+                                        authentication.getName(),
+
+                                        accessId
+                                ),
 
                         medicineId
                 );
@@ -258,11 +379,9 @@ public class MedicineController {
                                 Arrays.stream(
                                                 MedicineForm.values()
                                         )
-
                                         .map(
                                                 Enum::name
                                         )
-
                                         .toList()
                         )
 
@@ -294,11 +413,9 @@ public class MedicineController {
                                 Arrays.stream(
                                                 MealType.values()
                                         )
-
                                         .map(
                                                 Enum::name
                                         )
-
                                         .toList()
                         )
 
