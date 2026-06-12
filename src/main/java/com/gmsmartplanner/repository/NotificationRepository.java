@@ -1,20 +1,22 @@
 package com.gmsmartplanner.repository.todo;
 
-import com.gmsmartplanner.entity.todo.TodoNotification;
+import com.gmsmartplanner.entity.Notification;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.enums.NotificationType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 public interface TodoNotificationRepository
-        extends JpaRepository<TodoNotification, Long> {
+        extends JpaRepository<Notification, Long> {
 
     // =====================================
     // GET USER NOTIFICATIONS
     // =====================================
 
-    Page<TodoNotification>
+    Page<Notification>
     findAllByUserOrderByCreatedAtDesc(
 
             User user,
@@ -26,7 +28,7 @@ public interface TodoNotificationRepository
     // GET UNREAD NOTIFICATIONS
     // =====================================
 
-    Page<TodoNotification>
+    Page<Notification>
     findAllByUserAndReadFalseOrderByCreatedAtDesc(
 
             User user,
@@ -38,7 +40,7 @@ public interface TodoNotificationRepository
     // GET READ NOTIFICATIONS
     // =====================================
 
-    Page<TodoNotification>
+    Page<Notification>
     findAllByUserAndReadTrueOrderByCreatedAtDesc(
 
             User user,
@@ -50,7 +52,7 @@ public interface TodoNotificationRepository
     // GET NOTIFICATION BY TYPE
     // =====================================
 
-    Page<TodoNotification>
+    Page<Notification>
     findAllByUserAndTypeOrderByCreatedAtDesc(
 
             User user,
@@ -80,7 +82,7 @@ public interface TodoNotificationRepository
     // GET USER NOTIFICATIONS
     // =====================================
 
-    Page<TodoNotification>
+    Page<Notification>
     findAllByUserAndDeletedFalseOrderByCreatedAtDesc(
 
             User user,
@@ -95,4 +97,6 @@ public interface TodoNotificationRepository
     long countByUserAndReadFalseAndDeletedFalse(
             User user
     );
+
+    List<Notification> findAllByUserAndReadFalseAndDeletedFalse(User user );
 }

@@ -9,7 +9,7 @@ import lombok.Setter;
 
 @Entity
 @Table(
-        name = "todo_notifications",
+        name = "notifications",
 
         indexes = {
 
@@ -36,7 +36,7 @@ import lombok.Setter;
 )
 @Getter
 @Setter
-public class TodoNotification
+public class Notification
         extends BaseEntity {
 
     @Id
