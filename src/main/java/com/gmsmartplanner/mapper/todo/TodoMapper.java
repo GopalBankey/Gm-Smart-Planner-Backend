@@ -338,50 +338,6 @@ public class TodoMapper {
                 .build();
     }
 
-    // =====================================
-    // MAP REMINDER RESPONSE
-    // =====================================
-    public ReminderResponseDTO
-    mapToReminderResponse(
-
-            TodoReminder reminder
-
-    ) {
-
-        return ReminderResponseDTO.builder()
-
-                .id(reminder.getId())
-
-                .reminderTime(
-                        reminder.getReminderTime()
-                )
-
-                .notificationType(
-                        reminder.getNotificationType()
-                )
-
-                .sent(
-                        reminder.isSent()
-                )
-
-                .active(
-                        reminder.isActive()
-                )
-
-                .recurring(
-                        reminder.isRecurring()
-                )
-
-                .recurringType(
-                        reminder.getRecurringType()
-                )
-
-                .lastSentAt(
-                        reminder.getLastSentAt()
-                )
-
-                .build();
-    }
 
     // =====================================
     // MAP ACTIVITY RESPONSE
@@ -424,46 +380,6 @@ public class TodoMapper {
                 .build();
     }
 
-    // =====================================
-    // MAP NOTIFICATION RESPONSE
-    // =====================================
-    public NotificationResponseDTO
-    mapToNotificationResponse(
-
-            TodoNotification notification
-
-    ) {
-
-        return NotificationResponseDTO.builder()
-
-                .id(notification.getId())
-
-                .type(
-                        notification.getType()
-                )
-
-                .title(
-                        notification.getTitle()
-                )
-
-                .message(
-                        notification.getMessage()
-                )
-
-                .read(
-                        notification.isRead()
-                )
-
-                .sent(
-                        notification.isSent()
-                )
-
-                .createdAt(
-                        notification.getCreatedAt()
-                )
-
-                .build();
-    }
 
     // =====================================
     // MAP TODO RESPONSE

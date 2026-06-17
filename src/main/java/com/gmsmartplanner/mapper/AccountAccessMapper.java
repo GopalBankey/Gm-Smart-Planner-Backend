@@ -3,6 +3,7 @@ package com.gmsmartplanner.mapper;
 import com.gmsmartplanner.dto.request.SendAccessOtpRequestDTO;
 import com.gmsmartplanner.dto.request.UpdateAccessPermissionRequestDTO;
 import com.gmsmartplanner.dto.response.AccountAccessResponseDTO;
+import com.gmsmartplanner.dto.response.OwnerAccessResponseDTO;
 import com.gmsmartplanner.entity.AccountAccess;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.enums.AccessModule;
@@ -34,7 +35,9 @@ public class AccountAccessMapper {
                         access.getModule()
                 )
 
-                .otp(access.getOtp())
+                .otp(
+                        access.getOtp()
+                )
 
                 // =========================
                 // OWNER
@@ -61,6 +64,11 @@ public class AccountAccessMapper {
                 .displayName(
                         access.getDisplayName()
                 )
+
+                .countryCode(
+                        access.getCountryCode()
+                )
+                .mobileNumber(access.getOwner().getMobileNumber())
 
                 // =========================
                 // VERIFY
@@ -106,8 +114,8 @@ public class AccountAccessMapper {
     }
 
     // =====================================
-// CREATE ACCESS
-// =====================================
+    // CREATE ACCESS
+    // =====================================
 
     public AccountAccess
     toEntity(
@@ -137,6 +145,21 @@ public class AccountAccessMapper {
                 dto.getDisplayName()
         );
 
+        access.setCountryCode(
+
+                dto.getCountryCode() == null
+                        ||
+                        dto.getCountryCode().isBlank()
+
+                        ?
+
+                        "+91"
+
+                        :
+
+                        dto.getCountryCode()
+        );
+
         access.setOtp(
                 otp
         );
@@ -156,9 +179,9 @@ public class AccountAccessMapper {
         return access;
     }
 
-// =====================================
-// UPDATE OTP
-// =====================================
+    // =====================================
+    // UPDATE OTP
+    // =====================================
 
     public void
     updateOtp(
@@ -184,9 +207,9 @@ public class AccountAccessMapper {
         );
     }
 
-// =====================================
-// VERIFY
-// =====================================
+    // =====================================
+    // VERIFY
+    // =====================================
 
     public void
     verify(
@@ -200,9 +223,9 @@ public class AccountAccessMapper {
         );
     }
 
-// =====================================
-// PERMISSION
-// =====================================
+    // =====================================
+    // PERMISSION
+    // =====================================
 
     public void
     updatePermission(
@@ -232,5 +255,104 @@ public class AccountAccessMapper {
         access.setTakePermission(
                 dto.getTakePermission()
         );
+    }
+
+    public OwnerAccessResponseDTO
+    toOwnerResponse(
+
+            AccountAccess access
+
+    ) {
+
+        User member =
+                access.getMember();
+
+        return OwnerAccessResponseDTO
+                .builder()
+
+                .id(
+                        access.getId()
+                )
+
+                .module(
+                        access.getModule()
+                )
+
+                .memberId(
+
+                        member != null
+
+                                ?
+
+                                member.getId()
+
+                                :
+
+                                null
+                )
+
+                .memberName(
+
+                        member != null
+
+                                ?
+
+                                member.getName()
+
+                                :
+
+                                null
+                )
+
+                .memberMobile(
+
+                        member != null
+
+                                ?
+
+                                member.getMobileNumber()
+
+                                :
+
+                                null
+                )
+
+                .countryCode(
+                        access.getCountryCode()
+                )
+
+                .displayName(
+                        access.getDisplayName()
+                )
+
+                .otpVerified(
+                        access.getOtpVerified()
+                )
+
+                .viewPermission(
+                        access.getViewPermission()
+                )
+
+                .createPermission(
+                        access.getCreatePermission()
+                )
+
+                .updatePermission(
+                        access.getUpdatePermission()
+                )
+
+                .deletePermission(
+                        access.getDeletePermission()
+                )
+
+                .takePermission(
+                        access.getTakePermission()
+                )
+
+                .active(
+                        access.getActive()
+                )
+
+                .build();
     }
 }

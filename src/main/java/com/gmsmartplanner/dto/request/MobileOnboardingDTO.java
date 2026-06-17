@@ -15,14 +15,30 @@ public class MobileOnboardingDTO {
     )
     private String name;
 
-    // OPTIONAL FOR MOBILE LOGIN USER
-    @Email(message = "Invalid email format")
+    // OPTIONAL FOR MOBILE LOGIN
+
+    @Email(
+            message =
+                    "Invalid email format"
+    )
     private String email;
 
-    // REQUIRED FOR GOOGLE LOGIN USER
+    // REQUIRED FOR GOOGLE LOGIN
+
     @Pattern(
-            regexp = "^[0-9]{10}$",
-            message = "Mobile number must be exactly 10 digits"
+
+            regexp =
+                    "^[0-9]{10}$",
+
+            message =
+                    "Mobile number must be exactly 10 digits"
     )
+
     private String mobileNumber;
+
+    // OPTIONAL
+    // DEFAULT +91
+
+    private String countryCode =
+            "+91";
 }

@@ -57,6 +57,12 @@ public class User extends BaseEntity {
     @Column(length = 500, name = "profile_image_url")
     private String profileImageUrl;
 
+    @Column(
+            name = "country_code",
+            nullable = false
+    )
+    private String countryCode = "+91";
+
     // =====================================
     // PROFILE DETAILS
     // =====================================

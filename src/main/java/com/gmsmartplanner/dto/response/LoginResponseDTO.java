@@ -1,6 +1,5 @@
 package com.gmsmartplanner.dto.response;
 
-import com.gmsmartplanner.entity.User;
 import lombok.Builder;
 import lombok.Data;
 

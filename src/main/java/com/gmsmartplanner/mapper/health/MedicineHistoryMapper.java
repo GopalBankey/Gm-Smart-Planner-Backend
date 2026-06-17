@@ -482,7 +482,21 @@ public class MedicineHistoryMapper {
                                                                 )
 
                                                                 .slotName(
-                                                                        schedule.getSlotName()
+
+                                                                        schedule
+                                                                                .getSlotName()
+
+                                                                                != null
+
+                                                                                ?
+
+                                                                                schedule
+                                                                                        .getSlotName()
+                                                                                        .name()
+
+                                                                                :
+
+                                                                                null
                                                                 )
 
                                                                 .time(

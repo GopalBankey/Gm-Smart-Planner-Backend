@@ -52,6 +52,9 @@ public class AccountAccessResponseDTO {
 
     private Boolean takePermission;
 
+    private String countryCode;
+    private String mobileNumber;
+
     // =====================================
     // ACTIVE
     // =====================================

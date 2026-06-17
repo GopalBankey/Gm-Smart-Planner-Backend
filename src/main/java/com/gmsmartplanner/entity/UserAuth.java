@@ -74,6 +74,9 @@ public class UserAuth extends BaseEntity {
     )
     private LoginType loginType;
 
+
+
+
     // =====================================
     // EMAIL VERIFICATION
     // =====================================

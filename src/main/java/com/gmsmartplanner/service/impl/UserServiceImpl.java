@@ -560,9 +560,24 @@ public class UserServiceImpl
         // DUPLICATE MOBILE
 
         if (dto.getMobileNumber() != null
-                && userRepository.existsByMobileNumber(
-                dto.getMobileNumber()
-        )) {
+                && userRepository
+                .existsByCountryCodeAndMobileNumber(
+
+                        dto.getCountryCode() == null
+                                ||
+
+                                dto.getCountryCode().isBlank()
+
+                                ?
+
+                                "+91"
+
+                                :
+
+                                dto.getCountryCode(),
+
+                        dto.getMobileNumber()
+                )) {
 
             if (user.getMobileNumber() == null
                     || !user.getMobileNumber().equals(

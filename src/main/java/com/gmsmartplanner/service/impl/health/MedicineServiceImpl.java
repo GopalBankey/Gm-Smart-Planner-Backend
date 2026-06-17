@@ -6,6 +6,7 @@ import com.gmsmartplanner.dto.request.health.UpdateMedicineRequestDTO;
 import com.gmsmartplanner.dto.response.health.MedicineResponseDTO;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.health.*;
+import com.gmsmartplanner.enums.health.MedicineSlot;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.health.MedicineHistoryMapper;
 import com.gmsmartplanner.mapper.health.MedicineMapper;
@@ -13,12 +14,17 @@ import com.gmsmartplanner.repository.health.*;
 import com.gmsmartplanner.service.FileUploadService;
 import com.gmsmartplanner.service.UserHelperService;
 import com.gmsmartplanner.service.health.MedicineService;
+import com.gmsmartplanner.entity.Reminder;
+import com.gmsmartplanner.enums.NotificationReferenceType;
+import com.gmsmartplanner.repository.ReminderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import java.util.List;
 
 @Service
@@ -54,6 +60,9 @@ public class MedicineServiceImpl
 
     private final MedicineHistoryMapper
             historyMapper;
+
+    private final ReminderRepository
+            reminderRepository;
 
     // =====================================
     // CREATE
@@ -158,6 +167,12 @@ public class MedicineServiceImpl
                         .save(
                                 medicine
                         );
+
+// CREATE MEDICINE REMINDERS
+
+        createMedicineReminders(
+                saved
+        );
 
         // =====================================
         // AUTO CREATE REFILL REMINDER
@@ -359,7 +374,16 @@ public class MedicineServiceImpl
                         dto.getSchedules().get(i);
 
                 schedule.setSlotName(
-                        request.getSlotName()
+
+                        MedicineSlot.valueOf(
+
+                                request
+                                        .getSlotName()
+
+                                        .trim()
+
+                                        .toUpperCase()
+                        )
                 );
 
                 schedule.setTime(
@@ -397,7 +421,16 @@ public class MedicineServiceImpl
                 );
 
                 schedule.setSlotName(
-                        request.getSlotName()
+
+                        MedicineSlot.valueOf(
+
+                                request
+                                        .getSlotName()
+
+                                        .trim()
+
+                                        .toUpperCase()
+                        )
                 );
 
                 schedule.setTime(
@@ -442,6 +475,16 @@ public class MedicineServiceImpl
                         .save(
                                 medicine
                         );
+
+// RECREATE REMINDERS
+
+        deleteMedicineReminders(
+                updated.getId()
+        );
+
+        createMedicineReminders(
+                updated
+        );
 
         historyRepository
                 .save(
@@ -640,6 +683,144 @@ public class MedicineServiceImpl
                         new ResourceNotFoundException(
                                 "Medicine not found"
                         )
+                );
+    }
+    private void createMedicineReminders(
+
+            Medicine medicine
+
+    ) {
+
+        if (
+
+                medicine.getSchedules()
+                        == null
+
+                        ||
+
+                        medicine.getSchedules()
+                                .isEmpty()
+
+        ) {
+
+            return;
+        }
+
+        for (
+
+                MedicineSchedule schedule
+
+                :
+
+                medicine.getSchedules()
+
+        ) {
+
+            if (
+
+                    !Boolean.TRUE.equals(
+
+                            schedule.getActive()
+                    )
+
+            ) {
+
+                continue;
+            }
+
+            LocalDate reminderDate =
+
+                    medicine.getStartDate();
+
+            LocalDateTime reminderDateTime =
+
+                    reminderDate.atTime(
+
+                            schedule.getTime()
+                    );
+
+            // IF TIME ALREADY PASSED
+            // MOVE TO NEXT DAY
+
+            if (
+
+                    reminderDateTime
+
+                            .isBefore(
+
+                                    LocalDateTime
+                                            .now()
+                            )
+
+            ) {
+
+                reminderDate =
+                        reminderDate.plusDays(
+                                1
+                        );
+
+                reminderDateTime =
+
+                        reminderDate.atTime(
+
+                                schedule.getTime()
+                        );
+            }
+
+            Reminder reminder =
+                    new Reminder();
+
+            reminder.setUser(
+                    medicine.getUser()
+            );
+
+            reminder.setReferenceId(
+                    medicine.getId()
+            );
+
+            reminder.setReferenceType(
+
+                    NotificationReferenceType
+                            .MEDICINE
+            );
+
+            reminder.setReminderTime(
+                    reminderDateTime
+            );
+
+            reminder.setRecurring(
+                    true
+            );
+
+            reminder.setSent(
+                    false
+            );
+
+            reminder.setActive(
+                    true
+            );
+
+            reminderRepository
+                    .save(
+                            reminder
+                    );
+        }
+    }
+
+    private void deleteMedicineReminders(
+
+            Long medicineId
+
+    ) {
+
+        reminderRepository
+
+                .deleteAllByReferenceIdAndReferenceType(
+
+                        medicineId,
+
+                        NotificationReferenceType
+                                .MEDICINE
                 );
     }
 }

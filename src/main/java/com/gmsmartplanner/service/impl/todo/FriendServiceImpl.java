@@ -6,6 +6,7 @@ import com.gmsmartplanner.dto.response.UserSearchDTO;
 import com.gmsmartplanner.entity.todo.FriendRequest;
 import com.gmsmartplanner.entity.todo.Friendship;
 import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.todo.FriendRequestStatus;
 import com.gmsmartplanner.enums.todo.FriendshipStatus;
 import com.gmsmartplanner.exception.InvalidRequestException;
@@ -763,7 +764,10 @@ public class FriendServiceImpl
 
                         targetUser,
 
-                        null,
+                        referenceId,
+
+                        NotificationReferenceType
+                                .USER,
 
                         title,
 
@@ -773,6 +777,7 @@ public class FriendServiceImpl
                 );
 
         UserAuth auth =
+
                 userAuthRepository
                         .findByUser(
                                 targetUser
@@ -815,7 +820,11 @@ public class FriendServiceImpl
 
         }
 
-        catch (Exception e) {
+        catch (
+
+                Exception e
+
+        ) {
 
             auth.setFcmToken(
                     null

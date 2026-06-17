@@ -1,12 +1,13 @@
 package com.gmsmartplanner.service.impl;
 
 import com.gmsmartplanner.dto.response.NotificationResponseDTO;
-import com.gmsmartplanner.entity.todo.TodoNotification;
+import com.gmsmartplanner.entity.Notification;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.exception.InvalidRequestException;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
+import com.gmsmartplanner.mapper.ReminderNotificationMapper;
 import com.gmsmartplanner.mapper.todo.TodoMapper;
-import com.gmsmartplanner.repository.todo.TodoNotificationRepository;
+import com.gmsmartplanner.repository.NotificationRepository;
 import com.gmsmartplanner.repository.UserRepository;
 import com.gmsmartplanner.service.NotificationService;
 import com.gmsmartplanner.service.UserHelperService;
@@ -22,14 +23,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationServiceImpl
         implements NotificationService {
 
-    private final TodoNotificationRepository
+    private final NotificationRepository
             todoNotificationRepository;
 
     private final UserRepository
             userRepository;
 
-    private final TodoMapper
-            todoMapper;
+    private final ReminderNotificationMapper
+            reminderNotificationMapper;
 
     private final UserHelperService
             userHelperService;
@@ -61,7 +62,7 @@ public class NotificationServiceImpl
 
                         pageable
                 )
-                .map(todoMapper::mapToNotificationResponse);
+                .map(reminderNotificationMapper::mapToNotificationResponse);
     }
 
     // =====================================
@@ -81,7 +82,7 @@ public class NotificationServiceImpl
                         .getCurrentUser(
                                 username
                         );
-        TodoNotification notification =
+        Notification notification =
                 todoNotificationRepository
                         .findById(notificationId)
                         .orElseThrow(() ->
@@ -126,6 +127,38 @@ public class NotificationServiceImpl
                 .countByUserAndReadFalseAndDeletedFalse(
                         user
                 );
+    }
+
+
+
+    @Override
+    public void markAllNotificationsAsRead(
+
+            String username
+
+    ) {
+
+        User user =
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        var notifications =
+                todoNotificationRepository
+                        .findAllByUserAndReadFalseAndDeletedFalse(
+                                user
+                        );
+
+        notifications.forEach(notification ->
+                notification.setRead(true)
+        );
+
+        todoNotificationRepository
+                .saveAll(
+                        notifications
+                );
+
     }
 
 

@@ -134,4 +134,36 @@ public class NotificationController {
                         .build()
         );
     }
+
+
+    @PatchMapping("/read-all")
+    public ResponseEntity<ApiResponse>
+    markAllNotificationsAsRead(
+
+            Authentication authentication
+
+    ) {
+
+        notificationService
+                .markAllNotificationsAsRead(
+
+                        authentication.getName()
+                );
+
+        return ResponseEntity.ok(
+
+                ApiResponse
+                        .<Void>builder()
+
+                        .success(true)
+
+                        .message(
+                                "All notifications marked as read"
+                        )
+
+                        .build()
+        );
+
+    }
+
 }

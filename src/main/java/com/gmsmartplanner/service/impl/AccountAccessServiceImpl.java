@@ -2,6 +2,7 @@ package com.gmsmartplanner.service.impl;
 
 import com.gmsmartplanner.dto.request.*;
 import com.gmsmartplanner.dto.response.AccountAccessResponseDTO;
+import com.gmsmartplanner.dto.response.OwnerAccessResponseDTO;
 import com.gmsmartplanner.entity.AccountAccess;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.enums.AccessModule;
@@ -14,7 +15,6 @@ import com.gmsmartplanner.repository.UserRepository;
 import com.gmsmartplanner.service.AccountAccessService;
 import com.gmsmartplanner.service.UserHelperService;
 import com.gmsmartplanner.entity.UserAuth;
-import com.gmsmartplanner.exception.DuplicateResourceException;
 import com.gmsmartplanner.repository.UserAuthRepository;
 import com.gmsmartplanner.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +58,7 @@ public class AccountAccessServiceImpl
 // =====================================
 
     @Override
+    @Transactional
     public AccountAccessResponseDTO
     sendOtp(
 
@@ -67,17 +68,48 @@ public class AccountAccessServiceImpl
 
     ) {
 
+        // ==========================
+        // MEMBER
+        // ==========================
+
         User member =
                 getUser(
                         username
                 );
 
+        // ==========================
+        // COUNTRY CODE
+        // ==========================
+
+        String countryCode =
+
+                dto.getCountryCode() == null
+                        ||
+
+                        dto.getCountryCode().isBlank()
+
+                        ?
+
+                        "+91"
+
+                        :
+
+                        dto.getCountryCode();
+
+        // ==========================
+        // OWNER
+        // ==========================
+
         User owner =
 
                 userRepository
 
-                        .findByMobileNumber(
+                        .findByCountryCodeAndMobileNumber(
+
+                                countryCode,
+
                                 dto.getMobileNumber()
+
                         )
 
                         .orElseThrow(
@@ -85,11 +117,14 @@ public class AccountAccessServiceImpl
                                 () ->
 
                                         new ResourceNotFoundException(
+
                                                 "User not found"
                                         )
                         );
 
-        // SELF
+        // ==========================
+        // SELF ACCESS
+        // ==========================
 
         if (
 
@@ -110,78 +145,31 @@ public class AccountAccessServiceImpl
             );
         }
 
-        UserAuth auth =
-
-                userAuthRepository
-
-                        .findByUser(
-                                member
-                        )
-
-                        .orElseThrow(
-
-                                () ->
-
-                                        new ResourceNotFoundException(
-                                                "User auth not found"
-                                        )
-                        );
-
-        MobileAuthDTO mobile =
-                new MobileAuthDTO();
-
-        mobile.setMobileNumber(
-                dto.getMobileNumber()
-        );
-
-        mobile.setFcmToken(
-                auth.getFcmToken()
-        );
-
-        // SEND OTP
-
-        authService
-                .initiateMobileAuth(
-                        mobile
-                );
-
-        // READ ACTUAL OTP
-
-        String otp =
-
-                userAuthRepository
-
-                        .findByUser(
-                                owner
-                        )
-
-                        .orElseThrow(
-
-                                () ->
-
-                                        new ResourceNotFoundException(
-                                                "OTP not found"
-                                        )
-                        )
-
-                        .getOtp();
+        // ==========================
+        // EXISTING ACCESS
+        // ==========================
 
         AccountAccess access =
 
                 repository
 
-                        .findByOwnerAndMemberAndModuleAndActiveTrue(
+                        .findByOwnerAndMemberAndModule(
 
                                 owner,
 
                                 member,
 
-                                AccessModule.HEALTH
+                                AccessModule
+                                        .HEALTH
                         )
 
                         .orElse(
                                 null
                         );
+
+        // ==========================
+        // ALREADY VERIFIED
+        // ==========================
 
         if (
 
@@ -197,11 +185,86 @@ public class AccountAccessServiceImpl
 
         ) {
 
-            throw new DuplicateResourceException(
+            throw new InvalidRequestException(
 
-                    "Health access already assigned"
+                    "You already have access to this account"
             );
         }
+
+        // ==========================
+        // USER AUTH
+        // ==========================
+
+        UserAuth auth =
+
+                userAuthRepository
+
+                        .findByUser(
+                                owner
+                        )
+
+                        .orElseThrow(
+
+                                () ->
+
+                                        new ResourceNotFoundException(
+
+                                                "User auth not found"
+                                        )
+                        );
+
+        // ==========================
+        // SEND OTP
+        // ==========================
+
+        MobileAuthDTO mobile =
+                new MobileAuthDTO();
+
+        mobile.setCountryCode(
+                countryCode
+        );
+
+        mobile.setMobileNumber(
+                dto.getMobileNumber()
+        );
+
+        mobile.setFcmToken(
+
+                auth.getFcmToken()
+        );
+
+        authService
+                .initiateMobileAuth(
+                        mobile
+                );
+
+        // ==========================
+        // GET GENERATED OTP
+        // ==========================
+
+        String otp =
+
+                userAuthRepository
+
+                        .findByUser(
+                                owner
+                        )
+
+                        .orElseThrow(
+
+                                () ->
+
+                                        new ResourceNotFoundException(
+
+                                                "OTP not found"
+                                        )
+                        )
+
+                        .getOtp();
+
+        // ==========================
+        // UPDATE
+        // ==========================
 
         if (
 
@@ -218,7 +281,18 @@ public class AccountAccessServiceImpl
                     dto.getDisplayName()
             );
 
+            access.setCountryCode(
+                    countryCode
+            );
+
+            repository.save(
+                    access
+            );
         }
+
+        // ==========================
+        // CREATE
+        // ==========================
 
         else {
 
@@ -234,11 +308,11 @@ public class AccountAccessServiceImpl
 
                             otp
                     );
-        }
 
-        repository.save(
-                access
-        );
+            repository.save(
+                    access
+            );
+        }
 
         return mapper.toResponse(
                 access
@@ -546,57 +620,90 @@ public class AccountAccessServiceImpl
 // =====================================
 // MY ACCESS
 // =====================================
+@Override
+@Transactional(
+        readOnly = true
+)
+public List<AccountAccessResponseDTO>
+getMyAccess(
+
+        String username
+
+) {
+
+    User member =
+            getUser(
+                    username
+            );
+
+    return repository
+
+            .findAllByMemberAndOtpVerifiedTrue(
+
+                    member
+            )
+
+            .stream()
+
+            .map(
+
+                    mapper
+                            ::toResponse
+            )
+
+            .toList();
+}
 
     @Override
     @Transactional(
             readOnly = true
     )
-    public List<AccountAccessResponseDTO>
-    getMyAccess(
+    public OwnerAccessResponseDTO
+    getOwnerAccess(
 
             String username
 
     ) {
 
-        User member =
+        User owner =
                 getUser(
                         username
                 );
 
-        return repository
+        AccountAccess access =
 
-                .findAllByMemberAndActiveTrue(
+                repository
 
-                        member
-                )
+                        .findByOwnerAndModuleAndOtpVerifiedTrue(
 
-                .stream()
+                                owner,
 
-                .filter(
+                                AccessModule
+                                        .HEALTH
+                        )
 
-                        access ->
+                        .orElseThrow(
 
-                                Boolean.TRUE.equals(
+                                () ->
 
-                                        access
-                                                .getActive()
-                                )
-                )
+                                        new ResourceNotFoundException(
 
-                .map(
+                                                "No access found"
+                                        )
+                        );
 
-                        mapper
-                                ::toResponse
-                )
-
-                .toList();
+        return mapper.toOwnerResponse(
+                access
+        );
     }
+
     // =====================================
     // REMOVE
     // =====================================
 
 
     @Override
+    @Transactional
     public void
     removeAccess(
 
@@ -606,29 +713,38 @@ public class AccountAccessServiceImpl
 
     ) {
 
-        User member =
+        User owner =
                 getUser(
                         username
                 );
 
         AccountAccess access =
-                getAccess(
-                        accessId
-                );
 
-        // ONLY MEMBER
+                repository
+
+                        .findById(
+                                accessId
+                        )
+
+                        .orElseThrow(
+
+                                () ->
+
+                                        new ResourceNotFoundException(
+
+                                                "Access not found"
+                                        )
+                        );
 
         if (
 
                 !access
-
-                        .getMember()
-
+                        .getOwner()
                         .getId()
 
                         .equals(
 
-                                member
+                                owner
                                         .getId()
                         )
 
@@ -640,41 +756,10 @@ public class AccountAccessServiceImpl
             );
         }
 
-        // ALREADY REMOVED
-
-        if (
-
-                !Boolean.TRUE.equals(
-
-                        access
-                                .getActive()
-                )
-
-        ) {
-
-            throw new InvalidRequestException(
-
-                    "Access already removed"
-            );
-        }
-
-        access.setActive(
-                false
-        );
-
-        access.setOtp(
-                null
-        );
-
-        access.setOtpVerified(
-                false
-        );
-
-        repository.save(
+        repository.delete(
                 access
         );
     }
-
     // =====================================
     // ENTITY
     // =====================================

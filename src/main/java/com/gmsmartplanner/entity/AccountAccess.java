@@ -22,17 +22,13 @@ import lombok.Setter;
         indexes = {
 
                 @Index(
-                        name =
-                                "idx_owner",
-                        columnList =
-                                "owner_id"
+                        name = "idx_owner",
+                        columnList = "owner_id"
                 ),
 
                 @Index(
-                        name =
-                                "idx_member",
-                        columnList =
-                                "member_id"
+                        name = "idx_member",
+                        columnList = "member_id"
                 )
         }
 )
@@ -43,8 +39,7 @@ public class AccountAccess
 
     @Id
     @GeneratedValue(
-            strategy =
-                    GenerationType.IDENTITY
+            strategy = GenerationType.IDENTITY
     )
     private Long id;
 
@@ -55,15 +50,10 @@ public class AccountAccess
     @Enumerated(
             EnumType.STRING
     )
-
     @Column(
-            nullable =
-                    false,
-
-            length =
-                    30
+            nullable = false,
+            length = 30
     )
-
     private AccessModule module =
             AccessModule.HEALTH;
 
@@ -72,18 +62,12 @@ public class AccountAccess
     // =====================================
 
     @ManyToOne(
-            fetch =
-                    FetchType.LAZY
+            fetch = FetchType.LAZY
     )
-
     @JoinColumn(
-            name =
-                    "owner_id",
-
-            nullable =
-                    false
+            name = "owner_id",
+            nullable = false
     )
-
     private User owner;
 
     // =====================================
@@ -91,18 +75,12 @@ public class AccountAccess
     // =====================================
 
     @ManyToOne(
-            fetch =
-                    FetchType.LAZY
+            fetch = FetchType.LAZY
     )
-
     @JoinColumn(
-            name =
-                    "member_id",
-
-            nullable =
-                    false
+            name = "member_id",
+            nullable = false
     )
-
     private User member;
 
     // =====================================
@@ -110,101 +88,67 @@ public class AccountAccess
     // =====================================
 
     @Column(
-            name =
-                    "display_name",
-
-            length =
-                    100
+            name = "display_name",
+            length = 100
     )
-
     private String displayName;
+
+    // =====================================
+    // COUNTRY CODE
+    // =====================================
+
+    @Column(
+            name = "country_code",
+            nullable = false,
+            length = 5
+    )
+    private String countryCode =
+            "+91";
 
     // =====================================
     // ACCESS OTP
     // =====================================
 
     @Column(
-            name =
-                    "otp",
-
-            length =
-                    10
+            name = "otp",
+            length = 10
     )
-
     private String otp;
 
     @Column(
-            name =
-                    "otp_verified",
-
-            nullable =
-                    false
+            name = "otp_verified",
+            nullable = false
     )
-
     private Boolean otpVerified =
             false;
-
-    // OPTIONAL
-    // future rate limit
-
-//    private LocalDateTime otpSentAt;
 
     // =====================================
     // PERMISSIONS
     // =====================================
 
-    @Column(
-            name =
-                    "view_permission"
-    )
+    @Column(name = "view_permission")
+    private Boolean viewPermission = true;
 
-    private Boolean viewPermission =
-            true;
+    @Column(name = "create_permission")
+    private Boolean createPermission = false;
 
-    @Column(
-            name =
-                    "create_permission"
-    )
+    @Column(name = "update_permission")
+    private Boolean updatePermission = false;
 
-    private Boolean createPermission =
-            false;
+    @Column(name = "delete_permission")
+    private Boolean deletePermission = false;
 
-    @Column(
-            name =
-                    "update_permission"
-    )
-
-    private Boolean updatePermission =
-            false;
-
-    @Column(
-            name =
-                    "delete_permission"
-    )
-
-    private Boolean deletePermission =
-            false;
-
-    @Column(
-            name =
-                    "take_permission"
-    )
-
-    private Boolean takePermission =
-            false;
+    @Column(name = "take_permission")
+    private Boolean takePermission = false;
 
     // =====================================
     // ACTIVE
     // =====================================
 
     @Column(
-            name =
-                    "active",
-
-            nullable =
-                    false
+            name = "active",
+            nullable = false
     )
-
     private Boolean active =
             true;
 }

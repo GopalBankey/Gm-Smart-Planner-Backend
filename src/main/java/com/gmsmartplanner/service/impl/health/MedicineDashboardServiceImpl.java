@@ -6,6 +6,7 @@ import com.gmsmartplanner.entity.health.Medicine;
 import com.gmsmartplanner.entity.health.MedicineHistory;
 import com.gmsmartplanner.entity.health.MedicineSchedule;
 import com.gmsmartplanner.enums.health.MedicineHistoryStatus;
+import com.gmsmartplanner.enums.health.MedicineSlot;
 import com.gmsmartplanner.mapper.health.MedicineDashboardMapper;
 import com.gmsmartplanner.repository.health.MedicineHistoryRepository;
 import com.gmsmartplanner.repository.health.MedicineRepository;
@@ -38,10 +39,6 @@ public class MedicineDashboardServiceImpl
 
     private final MedicineDashboardMapper
             mapper;
-
-    // =====================================
-    // DASHBOARD
-    // =====================================
 
     @Override
     public MedicineDashboardResponseDTO
@@ -99,10 +96,7 @@ public class MedicineDashboardServiceImpl
     // MISSED
     // =====================================
 
-    private List<
-            MissedMedicineResponseDTO
-            >
-
+    private List<MissedMedicineResponseDTO>
     buildMissed(
 
             List<Medicine> medicines,
@@ -111,10 +105,7 @@ public class MedicineDashboardServiceImpl
 
     ) {
 
-        List<
-                MissedMedicineResponseDTO
-                >
-
+        List<MissedMedicineResponseDTO>
                 result =
 
                 new ArrayList<>();
@@ -165,12 +156,13 @@ public class MedicineDashboardServiceImpl
 
                                                         &&
 
-                                                        h.getSchedule()
+                                                        schedule
                                                                 .getId()
 
                                                                 .equals(
 
-                                                                        schedule
+                                                                        h
+                                                                                .getSchedule()
                                                                                 .getId()
                                                                 )
                                 );
@@ -211,11 +203,7 @@ public class MedicineDashboardServiceImpl
     // REFILL
     // =====================================
 
-
-    private List<
-            RefillSoonMedicineResponseDTO
-            >
-
+    private List<RefillSoonMedicineResponseDTO>
     buildRefill(
 
             List<Medicine> medicines
@@ -230,17 +218,20 @@ public class MedicineDashboardServiceImpl
 
                         medicine ->
 
-                                medicine.isRefillReminder()
+                                medicine
+                                        .isRefillReminder()
 
                                         &&
 
-                                        medicine.getCurrentStock()
+                                        medicine
+                                                .getCurrentStock()
 
                                                 != null
 
                                         &&
 
-                                        medicine.getCurrentStock()
+                                        medicine
+                                                .getCurrentStock()
 
                                                 <= 5
                 )
@@ -258,10 +249,7 @@ public class MedicineDashboardServiceImpl
     // SESSION
     // =====================================
 
-    private List<
-            SessionMedicineResponseDTO
-            >
-
+    private List<SessionMedicineResponseDTO>
     buildSessions(
 
             List<Medicine> medicines,
@@ -271,7 +259,7 @@ public class MedicineDashboardServiceImpl
     ) {
 
         Map<
-                String,
+                MedicineSlot,
 
                 List<
                         MedicineCardResponseDTO
@@ -326,18 +314,23 @@ public class MedicineDashboardServiceImpl
 
                                                         &&
 
-                                                        h.getSchedule()
+                                                        schedule
                                                                 .getId()
 
                                                                 .equals(
 
-                                                                        schedule
+                                                                        h
+                                                                                .getSchedule()
                                                                                 .getId()
                                                                 )
                                 )
 
                                 .map(
                                         MedicineHistory::getStatus
+                                )
+
+                                .filter(
+                                        Objects::nonNull
                                 )
 
                                 .findFirst()
@@ -387,10 +380,7 @@ public class MedicineDashboardServiceImpl
             }
         }
 
-        List<
-                SessionMedicineResponseDTO
-                >
-
+        List<SessionMedicineResponseDTO>
                 result =
 
                 new ArrayList<>();
@@ -430,7 +420,7 @@ public class MedicineDashboardServiceImpl
                             mapper
                                     .toSession(
 
-                                            session,
+                                            session.name(),
 
                                             upcoming,
 

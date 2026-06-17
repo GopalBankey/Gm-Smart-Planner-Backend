@@ -1,4 +1,12 @@
 package com.gmsmartplanner.enums.health;
 
-public class MedicineSlot {
+public enum MedicineSlot {
+
+    MORNING,
+
+    AFTERNOON,
+
+    EVENING,
+
+    NIGHT
 }

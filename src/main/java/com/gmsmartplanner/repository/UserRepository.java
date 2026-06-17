@@ -66,4 +66,19 @@ public interface UserRepository
 
             String mobileNumber
     );
+
+    Optional<User>
+    findByCountryCodeAndMobileNumber(
+
+            String countryCode,
+
+            String mobileNumber
+    );
+
+    boolean existsByCountryCodeAndMobileNumber(
+
+            String countryCode,
+
+            String mobileNumber
+    );
 }

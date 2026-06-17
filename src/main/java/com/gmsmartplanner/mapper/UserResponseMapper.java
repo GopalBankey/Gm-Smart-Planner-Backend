@@ -60,6 +60,9 @@ public class UserResponseMapper {
                 .firebaseUid(
                         auth.getFirebaseUid()
                 )
+                .countryCode(
+                        user.getCountryCode()
+                )
 
                 .createdAt(
                         user.getCreatedAt()

@@ -1,5 +1,6 @@
 package com.gmsmartplanner.dto.response;
 
+import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.NotificationType;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,15 +15,59 @@ public class NotificationResponseDTO {
 
     private Long id;
 
-    private NotificationType type;
+    // =====================================
+    // TYPE
+    // =====================================
 
-    private String title;
+    private NotificationType
+            type;
 
-    private String message;
+    // =====================================
+    // REFERENCE
+    // =====================================
 
-    private boolean read;
+    private Long
+            referenceId;
 
-    private boolean sent;
+    private NotificationReferenceType
+            referenceType;
 
-    private LocalDateTime createdAt;
+    // =====================================
+    // CONTENT
+    // =====================================
+
+    private String
+            title;
+
+    private String
+            message;
+
+    private String
+            imageUrl;
+
+    private String
+            action;
+
+    // =====================================
+    // STATUS
+    // =====================================
+
+    private Boolean
+            read;
+
+    private Boolean
+            sent;
+
+    private Boolean
+            deleted;
+
+    // =====================================
+    // TRACKING
+    // =====================================
+
+    private LocalDateTime
+            createdAt;
+
+    private LocalDateTime
+            updatedAt;
 }

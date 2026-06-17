@@ -1,7 +1,6 @@
-package com.gmsmartplanner.entity.todo;
+package com.gmsmartplanner.entity;
 
-import com.gmsmartplanner.entity.BaseEntity;
-import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.NotificationType;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -14,23 +13,35 @@ import lombok.Setter;
         indexes = {
 
                 @Index(
-                        name = "idx_notification_user",
-                        columnList = "user_id"
+                        name =
+                                "idx_notification_user",
+
+                        columnList =
+                                "user_id"
                 ),
 
                 @Index(
-                        name = "idx_notification_todo",
-                        columnList = "todo_id"
+                        name =
+                                "idx_notification_type",
+
+                        columnList =
+                                "type"
                 ),
 
                 @Index(
-                        name = "idx_notification_read",
-                        columnList = "read"
+                        name =
+                                "idx_notification_reference",
+
+                        columnList =
+                                "reference_id"
                 ),
 
                 @Index(
-                        name = "idx_notification_type",
-                        columnList = "type"
+                        name =
+                                "idx_notification_read",
+
+                        columnList =
+                                "is_read"
                 )
         }
 )
@@ -41,7 +52,8 @@ public class Notification
 
     @Id
     @GeneratedValue(
-            strategy = GenerationType.IDENTITY
+            strategy =
+                    GenerationType.IDENTITY
     )
     private Long id;
 
@@ -50,66 +62,142 @@ public class Notification
     // =====================================
 
     @ManyToOne(
-            fetch = FetchType.LAZY,
-            optional = false
+            fetch =
+                    FetchType.LAZY,
+
+            optional =
+                    false
     )
+
     @JoinColumn(
-            name = "user_id",
-            nullable = false
+
+            name =
+                    "user_id",
+
+            nullable =
+                    false
     )
+
     private User user;
 
     // =====================================
-    // TODO
+    // TYPE
     // =====================================
 
-    @ManyToOne(
-            fetch = FetchType.LAZY
+    @Enumerated(
+            EnumType.STRING
     )
-    @JoinColumn(name = "todo_id")
-    private Todo todo;
 
-    // =====================================
-    // NOTIFICATION TYPE
-    // =====================================
-
-    @Enumerated(EnumType.STRING)
     @Column(
-            nullable = false,
-            length = 50
+
+            nullable =
+                    false,
+
+            length =
+                    50
     )
+
     private NotificationType type;
 
     // =====================================
-    // TITLE
+    // REFERENCE
     // =====================================
 
     @Column(
-            nullable = false,
-            length = 150
+            name =
+                    "reference_id"
     )
+
+    private Long referenceId;
+
+    @Enumerated(
+            EnumType.STRING
+    )
+
+    @Column(
+
+            name =
+                    "reference_type",
+
+            length =
+                    50
+    )
+
+    private NotificationReferenceType
+            referenceType;
+
+    // =====================================
+    // CONTENT
+    // =====================================
+
+    @Column(
+
+            nullable =
+                    false,
+
+            length =
+                    150
+    )
+
     private String title;
 
+    @Column(
+
+            nullable =
+                    false,
+
+            length =
+                    500
+    )
+
+    private String message;
+
     // =====================================
-    // MESSAGE
+    // OPTIONAL
     // =====================================
 
     @Column(
-            nullable = false,
-            length = 500
+            length =
+                    500
     )
-    private String message;
+
+    private String imageUrl;
+
+    @Column(
+            length =
+                    255
+    )
+
+    private String action;
 
     // =====================================
     // STATUS
     // =====================================
 
-    @Column(nullable = false)
-    private boolean read = false;
+    @Column(
+            name =
+                    "is_read",
 
-    @Column(nullable = false)
-    private boolean sent = false;
+            nullable =
+                    false
+    )
 
-    @Column(nullable = false)
-    private boolean deleted = false;
+    private Boolean read =
+            false;
+
+    @Column(
+            nullable =
+                    false
+    )
+
+    private Boolean sent =
+            false;
+
+    @Column(
+            nullable =
+                    false
+    )
+
+    private Boolean deleted =
+            false;
 }

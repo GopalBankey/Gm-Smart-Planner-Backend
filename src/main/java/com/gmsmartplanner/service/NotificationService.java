@@ -24,4 +24,8 @@ public interface NotificationService {
     long getUnreadNotificationCount(
             String username
     );
+
+    void markAllNotificationsAsRead(
+            String username
+    );
 }

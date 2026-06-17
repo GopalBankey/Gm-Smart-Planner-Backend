@@ -1,5 +1,6 @@
 package com.gmsmartplanner.dto.response.todo;
 
+import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.budget.RecurringType;
 import com.gmsmartplanner.enums.todo.ReminderNotificationType;
 import lombok.Builder;
@@ -15,18 +16,51 @@ public class ReminderResponseDTO {
 
     private Long id;
 
-    private LocalDateTime reminderTime;
+    // =====================================
+    // REFERENCE
+    // =====================================
+
+    private Long referenceId;
+
+    private NotificationReferenceType
+            referenceType;
+
+    // =====================================
+    // REMINDER
+    // =====================================
+
+    private LocalDateTime
+            reminderTime;
 
     private ReminderNotificationType
             notificationType;
 
-    private boolean sent;
+    // =====================================
+    // STATUS
+    // =====================================
 
-    private boolean active;
+    private Boolean
+            sent;
 
-    private boolean recurring;
+    private Boolean
+            active;
 
-    private RecurringType recurringType;
+    private Boolean
+            recurring;
 
-    private LocalDateTime lastSentAt;
+    private RecurringType
+            recurringType;
+
+    // =====================================
+    // TRACKING
+    // =====================================
+
+    private LocalDateTime
+            lastSentAt;
+
+    private LocalDateTime
+            createdAt;
+
+    private LocalDateTime
+            updatedAt;
 }

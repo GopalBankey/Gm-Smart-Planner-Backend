@@ -19,31 +19,7 @@ AccountAccessRepository
                         > {
 
     // =====================================
-    // OWNER ALREADY SHARED
-    // =====================================
-
-    boolean
-    existsByOwnerAndModuleAndActiveTrue(
-
-            User owner,
-
-            AccessModule module
-    );
-
-    // =====================================
-    // OWNER ACCESS
-    // =====================================
-
-    Optional<AccountAccess>
-    findByOwnerAndModuleAndActiveTrue(
-
-            User owner,
-
-            AccessModule module
-    );
-
-    // =====================================
-    // OWNER + MEMBER
+    // OWNER + MEMBER + MODULE
     // =====================================
 
     Optional<AccountAccess>
@@ -56,8 +32,47 @@ AccountAccessRepository
             AccessModule module
     );
 
+    Optional<AccountAccess>
+    findByOwnerAndMemberAndModuleAndActiveTrue(
+
+            User owner,
+
+            User member,
+
+            AccessModule module
+    );
+
     // =====================================
-    // MEMBER ALL ACCESS
+    // OWNER
+    // =====================================
+
+    Optional<AccountAccess>
+    findByOwnerAndModule(
+
+            User owner,
+
+            AccessModule module
+    );
+
+    Optional<AccountAccess>
+    findByOwnerAndModuleAndActiveTrue(
+
+            User owner,
+
+            AccessModule module
+    );
+
+    // ADD THIS
+    Optional<AccountAccess>
+    findByOwnerAndModuleAndOtpVerifiedTrue(
+
+            User owner,
+
+            AccessModule module
+    );
+
+    // =====================================
+    // MEMBER
     // =====================================
 
     List<AccountAccess>
@@ -66,21 +81,18 @@ AccountAccessRepository
             User member
     );
 
-    // =====================================
-    // VERIFIED
-    // =====================================
+    // ADD THIS
+    List<AccountAccess>
+    findAllByMemberAndOtpVerifiedTrue(
 
-    Optional<AccountAccess>
-    findByMemberAndOtpAndActiveTrue(
-
-            User member,
-
-            String otp
+            User member
     );
 
-    // =====================================
-    // MEMBER + MODULE
-    // =====================================
+    Optional<AccountAccess>
+    findByMemberAndActiveTrue(
+
+            User member
+    );
 
     List<AccountAccess>
     findAllByMemberAndModuleAndActiveTrue(
@@ -100,19 +112,15 @@ AccountAccessRepository
             AccessModule module
     );
 
-    Optional<AccountAccess>
-    findByMemberAndActiveTrue(
-
-            User member
-    );
+    // =====================================
+    // OTP
+    // =====================================
 
     Optional<AccountAccess>
-    findByOwnerAndMemberAndModuleAndActiveTrue(
-
-            User owner,
+    findByMemberAndOtpAndActiveTrue(
 
             User member,
 
-            AccessModule module
+            String otp
     );
 }

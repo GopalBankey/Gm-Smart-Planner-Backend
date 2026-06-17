@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 public class ResendOtpRequestDTO {
 
-    @NotBlank
     private String mobileNumber;
+
+    private String email;
 }

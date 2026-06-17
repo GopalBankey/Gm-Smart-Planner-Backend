@@ -1,4 +1,4 @@
-package com.gmsmartplanner.dto.request;
+package com.gmsmartplanner.dto.response;
 
 import com.gmsmartplanner.enums.AccessModule;
 import lombok.Builder;

@@ -7,6 +7,7 @@ import com.gmsmartplanner.dto.response.health.MedicineResponseDTO;
 import com.gmsmartplanner.dto.response.health.MedicineScheduleResponseDTO;
 import com.gmsmartplanner.entity.health.Medicine;
 import com.gmsmartplanner.entity.health.MedicineSchedule;
+import com.gmsmartplanner.enums.health.MedicineSlot;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -183,11 +184,24 @@ public class MedicineMapper {
                 response =
                 new ArrayList<>();
 
-        if (schedules == null)
-            return response;
+        if (
 
-        for (MedicineScheduleRequestDTO dto
-                : schedules) {
+                schedules == null
+
+        ) {
+
+            return response;
+        }
+
+        for (
+
+                MedicineScheduleRequestDTO dto
+
+                :
+
+                schedules
+
+        ) {
 
             MedicineSchedule schedule =
                     new MedicineSchedule();
@@ -196,8 +210,19 @@ public class MedicineMapper {
                     medicine
             );
 
+            // FIXED FOR ENUM
+
             schedule.setSlotName(
-                    dto.getSlotName()
+
+                    MedicineSlot.valueOf(
+
+                            dto
+                                    .getSlotName()
+
+                                    .trim()
+
+                                    .toUpperCase()
+                    )
             );
 
             schedule.setTime(
@@ -207,7 +232,6 @@ public class MedicineMapper {
             schedule.setDoseCount(
                     dto.getDoseCount()
             );
-
 
             response.add(
                     schedule
@@ -276,77 +300,46 @@ public class MedicineMapper {
 
                 .doctorId(
 
-                        medicine.getDoctor()
-                                != null
-
+                        medicine.getDoctor() != null
                                 ?
-
-                                medicine.getDoctor()
-                                        .getId()
-
+                                medicine.getDoctor().getId()
                                 :
-
                                 null
                 )
 
                 .doctorName(
 
-                        medicine.getDoctor()
-                                != null
-
+                        medicine.getDoctor() != null
                                 ?
-
-                                medicine.getDoctor()
-                                        .getDoctorName()
-
+                                medicine.getDoctor().getDoctorName()
                                 :
-
                                 null
                 )
 
-
-
                 .hospitalId(
 
-                        medicine.getHospital()
-                                != null
-
+                        medicine.getHospital() != null
                                 ?
-
-                                medicine.getHospital()
-                                        .getId()
-
+                                medicine.getHospital().getId()
                                 :
-
                                 null
                 )
 
                 .hospitalName(
 
-                        medicine.getHospital()
-                                != null
-
+                        medicine.getHospital() != null
                                 ?
-
-                                medicine.getHospital()
-                                        .getHospitalName()
-
+                                medicine.getHospital().getHospitalName()
                                 :
-
                                 null
                 )
-             .hospitalAddress(
 
-                        medicine.getHospital()
-                                != null
+                .hospitalAddress(
 
+                        medicine.getHospital() != null
                                 ?
-
-                                medicine.getHospital()
-                                        .getAddress()
-
+                                medicine.getHospital().getAddress()
                                 :
-
                                 null
                 )
 
@@ -376,6 +369,7 @@ public class MedicineMapper {
                                 .getSchedules()
 
                                 .stream()
+
                                 .filter(
 
                                         s ->
@@ -385,30 +379,39 @@ public class MedicineMapper {
                                                 )
                                 )
 
-                                .map(s ->
+                                .map(
 
-                                        MedicineScheduleResponseDTO
-                                                .builder()
+                                        s ->
 
-                                                .id(
-                                                        s.getId()
-                                                )
+                                                MedicineScheduleResponseDTO
+                                                        .builder()
 
-                                                .slotName(
-                                                        s.getSlotName()
-                                                )
+                                                        .id(
+                                                                s.getId()
+                                                        )
 
-                                                .time(
-                                                        s.getTime()
-                                                )
+                                                        .slotName(
+                                                                s.getSlotName()
+                                                                        .name()
+                                                        )
 
-                                                .doseCount(
-                                                        s.getDoseCount()
-                                                )
+                                                        .time(
+                                                                s.getTime()
+                                                        )
 
+                                                        .doseCount(
+                                                                s.getDoseCount()
+                                                        )
 
+                                                        .enabled(
 
-                                                .build()
+                                                                Boolean.TRUE.equals(
+
+                                                                        s.getActive()
+                                                                )
+                                                        )
+
+                                                        .build()
                                 )
 
                                 .toList()

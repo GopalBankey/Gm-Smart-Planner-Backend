@@ -4,6 +4,7 @@ import com.gmsmartplanner.dto.request.SendAccessOtpRequestDTO;
 import com.gmsmartplanner.dto.request.UpdateAccessPermissionRequestDTO;
 import com.gmsmartplanner.dto.request.VerifyAccessOtpRequestDTO;
 import com.gmsmartplanner.dto.response.AccountAccessResponseDTO;
+import com.gmsmartplanner.dto.response.OwnerAccessResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
 import com.gmsmartplanner.service.AccountAccessService;
 import jakarta.validation.Valid;
@@ -247,6 +248,56 @@ AccountAccessController {
                         .build()
         );
     }
+
+
+    // =====================================
+// OWNER ACCESS
+// =====================================
+
+    @GetMapping(
+            "/owner"
+    )
+
+    public ResponseEntity<
+            ApiResponse<
+                    OwnerAccessResponseDTO
+                    >
+            >
+
+    getOwnerAccess(
+
+            Authentication auth
+
+    ) {
+
+        return ResponseEntity.ok(
+
+                ApiResponse
+
+                        .<OwnerAccessResponseDTO>
+                                builder()
+
+                        .success(
+                                true
+                        )
+
+                        .message(
+                                "Owner access fetched"
+                        )
+
+                        .data(
+
+                                service
+                                        .getOwnerAccess(
+
+                                                auth.getName()
+                                        )
+                        )
+
+                        .build()
+        );
+    }
+
 
     // =====================================
     // LIST

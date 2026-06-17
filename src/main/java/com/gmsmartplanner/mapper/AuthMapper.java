@@ -20,7 +20,8 @@ public class AuthMapper {
     // CREATE MOBILE USER
     // =====================================
     public User createMobileUser(
-            String mobileNumber
+            String mobileNumber,
+            String countryCode
     ) {
 
         User user = new User();
@@ -28,6 +29,7 @@ public class AuthMapper {
         user.setMobileNumber(
                 mobileNumber
         );
+        user.setCountryCode(countryCode);
 
         user.setProfileCompleted(false);
 
@@ -85,6 +87,7 @@ public class AuthMapper {
         userAuth.setLoginType(
                 loginType
         );
+
 
         userAuth.setFcmToken(
                 fcmToken

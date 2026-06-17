@@ -20,6 +20,8 @@ public class UserResponseDTO {
 
     private String email;
 
+    private String countryCode;
+
     private String mobileNumber;
 
     private String profileImageUrl;

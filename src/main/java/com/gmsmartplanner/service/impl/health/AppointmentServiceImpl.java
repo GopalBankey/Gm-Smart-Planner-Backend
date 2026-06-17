@@ -18,6 +18,11 @@ import com.gmsmartplanner.service.health.AppointmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import com.gmsmartplanner.entity.Reminder;
+import com.gmsmartplanner.enums.NotificationReferenceType;
+import com.gmsmartplanner.repository.ReminderRepository;
+
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -41,6 +46,9 @@ public class AppointmentServiceImpl
 
     private final UserHelperService
             userHelperService;
+
+    private final ReminderRepository
+            reminderRepository;
 
     // =====================================
     // CREATE
@@ -122,6 +130,9 @@ public class AppointmentServiceImpl
                                 appointment
                         );
 
+        createAppointmentReminder(
+                saved
+        );
         return appointmentMapper
                 .mapToResponse(
                         saved
@@ -286,12 +297,19 @@ public class AppointmentServiceImpl
                             .UPCOMING
             );
         }
-
         Appointment updated =
                 appointmentRepository
                         .save(
                                 appointment
                         );
+
+        deleteAppointmentReminder(
+                updated.getId()
+        );
+
+        createAppointmentReminder(
+                updated
+        );
 
         return appointmentMapper
                 .mapToResponse(
@@ -371,6 +389,10 @@ public class AppointmentServiceImpl
                 false
         );
 
+        deleteAppointmentReminder(
+                appointmentId
+        );
+
         appointmentRepository
                 .save(
                         appointment
@@ -404,6 +426,89 @@ public class AppointmentServiceImpl
                         new ResourceNotFoundException(
                                 "Appointment not found"
                         )
+                );
+    }
+
+    private void createAppointmentReminder(
+
+            Appointment appointment
+
+    ) {
+
+        LocalDateTime reminderTime =
+
+                LocalDateTime.of(
+
+                        appointment.getAppointmentDate(),
+
+                        appointment.getAppointmentTime()
+                );
+
+        if (
+
+                reminderTime.isBefore(
+
+                        LocalDateTime.now()
+                )
+
+        ) {
+
+            return;
+        }
+
+        Reminder reminder =
+                new Reminder();
+
+        reminder.setUser(
+                appointment.getUser()
+        );
+
+        reminder.setReferenceId(
+                appointment.getId()
+        );
+
+        reminder.setReferenceType(
+
+                NotificationReferenceType
+                        .APPOINTMENT
+        );
+
+        reminder.setReminderTime(
+                reminderTime
+        );
+
+        reminder.setRecurring(
+                false
+        );
+
+        reminder.setSent(
+                false
+        );
+
+        reminder.setActive(
+                true
+        );
+
+        reminderRepository
+                .save(
+                        reminder
+                );
+    }
+
+    private void deleteAppointmentReminder(
+
+            Long appointmentId
+
+    ) {
+
+        reminderRepository
+
+                .deleteAllByReferenceIdAndReferenceType(
+
+                        appointmentId,
+
+                        NotificationReferenceType
+                                .APPOINTMENT
                 );
     }
 }

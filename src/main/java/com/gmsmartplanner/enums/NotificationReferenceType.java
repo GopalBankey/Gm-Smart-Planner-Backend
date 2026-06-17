@@ -1,4 +1,29 @@
 package com.gmsmartplanner.enums;
 
-public class NotificationReferenceType {
+public enum NotificationReferenceType {
+
+    TODO,
+
+    MEDICINE,
+
+    EXTRA_MEDICINE,
+
+    APPOINTMENT,
+
+    REPORT,
+
+    HOSPITAL,
+
+    DOCTOR,
+
+    FAMILY,
+
+    ACCESS,
+
+    FRIEND,
+
+    COMMENT,
+
+    SYSTEM,
+    USER
 }

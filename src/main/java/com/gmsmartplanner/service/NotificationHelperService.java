@@ -2,6 +2,7 @@ package com.gmsmartplanner.service;
 
 import com.gmsmartplanner.entity.todo.Todo;
 import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.NotificationType;
 
 public interface NotificationHelperService {
@@ -10,7 +11,9 @@ public interface NotificationHelperService {
 
             User user,
 
-            Todo todo,
+            Long referenceId,
+
+            NotificationReferenceType referenceType,
 
             String title,
 

@@ -6,6 +6,7 @@ import com.gmsmartplanner.entity.todo.Todo;
 import com.gmsmartplanner.entity.todo.TodoActivity;
 import com.gmsmartplanner.entity.todo.TodoChecklist;
 import com.gmsmartplanner.entity.todo.TodoShare;
+import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.NotificationType;
 import com.gmsmartplanner.enums.todo.TodoActivityType;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
@@ -143,6 +144,7 @@ public class SubTaskServiceImpl
     // =====================================
     // SEND NOTIFICATION TO SHARED USERS
     // =====================================
+
     private void sendNotificationToSharedUsers(
 
             Todo todo,
@@ -157,35 +159,40 @@ public class SubTaskServiceImpl
 
     ) {
 
-        List<TodoShare> sharedUsers =
+        List<User> receivers =
+                new java.util.ArrayList<>();
+
+        // OWNER
+        receivers.add(
+                todo.getOwner()
+        );
+
+        // SHARED USERS
+        receivers.addAll(
+
                 todoShareRepository
-                        .findAllByTodoAndActiveTrue(todo);
+                        .findAllByTodoAndActiveTrue(todo)
+                        .stream()
+                        .map(TodoShare::getSharedWithUser)
+                        .toList()
+        );
 
-        for (TodoShare share : sharedUsers) {
+        for (User receiver : receivers) {
 
-            User sharedUser =
-                    share.getSharedWithUser();
-
-            // =====================================
-            // PREVENT SELF NOTIFICATION
-            // =====================================
-
-            if (sharedUser.getId()
+            if (receiver.getId()
                     .equals(actionUser.getId())) {
 
                 continue;
             }
-
-            // =====================================
-            // SAVE DB NOTIFICATION
-            // =====================================
-
             notificationHelperService
                     .createNotification(
 
-                            sharedUser,
+                            receiver,
 
-                            todo,
+                            todo.getId(),
+
+                            NotificationReferenceType
+                                    .TODO,
 
                             title,
 
@@ -194,13 +201,9 @@ public class SubTaskServiceImpl
                             type
                     );
 
-            // =====================================
-            // SEND PUSH NOTIFICATION
-            // =====================================
-
             UserAuth auth =
                     userAuthRepository
-                            .findByUser(sharedUser)
+                            .findByUser(receiver)
                             .orElse(null);
 
             if (auth == null
@@ -228,16 +231,107 @@ public class SubTaskServiceImpl
 
             } catch (Exception e) {
 
-                // =====================================
-                // INVALID TOKEN HANDLING
-                // =====================================
-
                 auth.setFcmToken(null);
 
                 userAuthRepository.save(auth);
             }
         }
     }
+//    private void sendNotificationToSharedUsers(
+//
+//            Todo todo,
+//
+//            User actionUser,
+//
+//            String title,
+//
+//            String message,
+//
+//            NotificationType type
+//
+//    ) {
+//
+//        List<TodoShare> sharedUsers =
+//                todoShareRepository
+//                        .findAllByTodoAndActiveTrue(todo);
+//
+//        for (TodoShare share : sharedUsers) {
+//
+//            User sharedUser =
+//                    share.getSharedWithUser();
+//
+//            // =====================================
+//            // PREVENT SELF NOTIFICATION
+//            // =====================================
+//
+//            if (sharedUser.getId()
+//                    .equals(actionUser.getId())) {
+//
+//                continue;
+//            }
+//
+//            // =====================================
+//            // SAVE DB NOTIFICATION
+//            // =====================================
+//
+//            notificationHelperService
+//                    .createNotification(
+//
+//                            sharedUser,
+//
+//                            todo,
+//
+//                            title,
+//
+//                            message,
+//
+//                            type
+//                    );
+//
+//            // =====================================
+//            // SEND PUSH NOTIFICATION
+//            // =====================================
+//
+//            UserAuth auth =
+//                    userAuthRepository
+//                            .findByUser(sharedUser)
+//                            .orElse(null);
+//
+//            if (auth == null
+//                    || auth.getFcmToken() == null
+//                    || auth.getFcmToken().isBlank()) {
+//
+//                continue;
+//            }
+//
+//            try {
+//
+//                firebaseNotificationService
+//                        .sendNotification(
+//
+//                                auth.getFcmToken(),
+//
+//                                title,
+//
+//                                message,
+//
+//                                todo.getId(),
+//
+//                                type
+//                        );
+//
+//            } catch (Exception e) {
+//
+//                // =====================================
+//                // INVALID TOKEN HANDLING
+//                // =====================================
+//
+//                auth.setFcmToken(null);
+//
+//                userAuthRepository.save(auth);
+//            }
+//        }
+//    }
 
     // =====================================
     // GET SUB TASK

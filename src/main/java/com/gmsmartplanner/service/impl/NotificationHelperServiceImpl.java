@@ -1,10 +1,10 @@
 package com.gmsmartplanner.service.impl;
 
-import com.gmsmartplanner.entity.todo.Todo;
-import com.gmsmartplanner.entity.todo.TodoNotification;
+import com.gmsmartplanner.entity.Notification;
 import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.NotificationType;
-import com.gmsmartplanner.repository.todo.TodoNotificationRepository;
+import com.gmsmartplanner.repository.NotificationRepository;
 import com.gmsmartplanner.service.NotificationHelperService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,15 +14,17 @@ import org.springframework.stereotype.Service;
 public class NotificationHelperServiceImpl
         implements NotificationHelperService {
 
-    private final TodoNotificationRepository
-            todoNotificationRepository;
+    private final NotificationRepository
+            notificationRepository;
 
     @Override
     public void createNotification(
 
             User user,
 
-            Todo todo,
+            Long referenceId,
+
+            NotificationReferenceType referenceType,
 
             String title,
 
@@ -32,27 +34,64 @@ public class NotificationHelperServiceImpl
 
     ) {
 
-        TodoNotification notification =
-                new TodoNotification();
+        Notification notification =
+                new Notification();
 
-        notification.setUser(user);
+        // =========================
+        // USER
+        // =========================
 
-        notification.setTodo(todo);
-
-        notification.setTitle(title);
-
-        notification.setMessage(message);
-
-        notification.setType(type);
-
-        notification.setRead(false);
-
-        notification.setSent(true);
-
-        notification.setDeleted(false);
-
-        todoNotificationRepository.save(
-                notification
+        notification.setUser(
+                user
         );
+
+        // =========================
+        // REFERENCE
+        // =========================
+
+        notification.setReferenceId(
+                referenceId
+        );
+
+        notification.setReferenceType(
+                referenceType
+        );
+
+        // =========================
+        // CONTENT
+        // =========================
+
+        notification.setTitle(
+                title
+        );
+
+        notification.setMessage(
+                message
+        );
+
+        notification.setType(
+                type
+        );
+
+        // =========================
+        // STATUS
+        // =========================
+
+        notification.setRead(
+                false
+        );
+
+        notification.setSent(
+                true
+        );
+
+        notification.setDeleted(
+                false
+        );
+
+        notificationRepository
+                .save(
+                        notification
+                );
     }
 }

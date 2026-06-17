@@ -13,6 +13,8 @@ public class UserMapper {
     // =====================================
     // UPDATE ONBOARDING DETAILS
     // =====================================
+
+
     public void updateOnboardingDetails(
 
             User user,
@@ -24,10 +26,18 @@ public class UserMapper {
     ) {
 
         // NAME
-        if (dto.getName() != null
-                && !dto.getName().isBlank()) {
+
+        if (
+
+                dto.getName() != null
+                        &&
+
+                        !dto.getName().isBlank()
+
+        ) {
 
             user.setName(
+
                     dto.getName()
             );
         }
@@ -36,14 +46,28 @@ public class UserMapper {
         // MOBILE LOGIN USER
         // =====================================
 
-        if (userAuth.getLoginType()
-                == LoginType.MOBILE) {
+        if (
 
-            // OPTIONAL EMAIL
-            if (dto.getEmail() != null
-                    && !dto.getEmail().isBlank()) {
+                userAuth.getLoginType()
+
+                        ==
+
+                        LoginType.MOBILE
+
+        ) {
+
+            if (
+
+                    dto.getEmail() != null
+
+                            &&
+
+                            !dto.getEmail().isBlank()
+
+            ) {
 
                 user.setEmail(
+
                         dto.getEmail()
                 );
             }
@@ -53,14 +77,46 @@ public class UserMapper {
         // GOOGLE LOGIN USER
         // =====================================
 
-        if (userAuth.getLoginType()
-                == LoginType.GOOGLE) {
+        if (
 
-            if (dto.getMobileNumber() != null
-                    && !dto.getMobileNumber().isBlank()) {
+                userAuth.getLoginType()
+
+                        ==
+
+                        LoginType.GOOGLE
+
+        ) {
+
+            if (
+
+                    dto.getMobileNumber() != null
+
+                            &&
+
+                            !dto.getMobileNumber().isBlank()
+
+            ) {
 
                 user.setMobileNumber(
+
                         dto.getMobileNumber()
+                );
+
+                user.setCountryCode(
+
+                        dto.getCountryCode() == null
+
+                                ||
+
+                                dto.getCountryCode().isBlank()
+
+                                ?
+
+                                "+91"
+
+                                :
+
+                                dto.getCountryCode()
                 );
             }
         }

@@ -36,5 +36,51 @@ public enum NotificationType {
 
     FRIEND_REQUEST,
 
-    FRIEND_REQUEST_ACCEPTED
+    FRIEND_REQUEST_ACCEPTED,
+
+    // =====================================
+    // MEDICINE
+    // =====================================
+
+    MEDICINE_REMINDER,
+
+    MEDICINE_MISSED,
+
+    MEDICINE_REFILL,
+
+    MEDICINE_COMPLETED,
+
+    // =====================================
+    // APPOINTMENT
+    // =====================================
+
+    APPOINTMENT_REMINDER,
+
+    APPOINTMENT_COMPLETED,
+
+    // =====================================
+    // REPORT
+    // =====================================
+
+    REPORT_ADDED,
+
+    REPORT_UPDATED,
+
+    // =====================================
+    // ACCESS
+    // =====================================
+
+    ACCESS_REQUEST,
+
+    ACCESS_OTP,
+
+    ACCESS_GRANTED,
+
+    ACCESS_REMOVED,
+
+    // =====================================
+    // SYSTEM
+    // =====================================
+
+    SYSTEM
 }

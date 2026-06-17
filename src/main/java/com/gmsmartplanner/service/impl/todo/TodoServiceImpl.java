@@ -48,8 +48,8 @@ public class TodoServiceImpl
     private final TodoActivityRepository
             todoActivityRepository;
 
-    private final TodoReminderRepository
-            todoReminderRepository;
+    private final ReminderRepository
+            reminderRepository;
 
     private final UserRepository
             userRepository;
@@ -835,7 +835,9 @@ public class TodoServiceImpl
 
                             user,
 
-                            todo,
+                            todo.getId(),
+
+                            NotificationReferenceType.TODO,
 
                             "Task Shared",
 
@@ -878,38 +880,86 @@ public class TodoServiceImpl
     // CREATE REMINDER
     // =====================================
     private void createReminder(
+
             Todo todo
+
     ) {
 
-        if (todo.getTaskDateTime() == null) {
+        if (
+
+                todo.getTaskDateTime()
+                        == null
+
+        ) {
 
             return;
         }
 
-        TodoReminder reminder =
-                new TodoReminder();
+        List<TodoShare> shares =
 
-        reminder.setTodo(todo);
+                todoShareRepository
+                        .findAllByTodoAndActiveTrue(
+                                todo
+                        );
 
-        reminder.setReminderTime(
-                todo.getTaskDateTime()
-        );
+        for (
 
-        reminder.setNotificationType(
-                ReminderNotificationType.NORMAL
-        );
+                TodoShare share
 
-        reminder.setActive(true);
+                :
 
-        reminder.setSent(false);
+                shares
 
-        reminder.setRecurring(false);
+        ) {
 
-        todoReminderRepository.save(
-                reminder
-        );
+            Reminder reminder =
+                    new Reminder();
+
+            reminder.setUser(
+
+                    share.getSharedWithUser()
+            );
+
+            reminder.setReferenceId(
+
+                    todo.getId()
+            );
+
+            reminder.setReferenceType(
+
+                    NotificationReferenceType
+                            .TODO
+            );
+
+            reminder.setReminderTime(
+
+                    todo.getTaskDateTime()
+            );
+
+            reminder.setNotificationType(
+
+                    ReminderNotificationType
+                            .NORMAL
+            );
+
+            reminder.setSent(
+                    false
+            );
+
+            reminder.setActive(
+                    true
+            );
+
+            reminder.setRecurring(
+                    false
+            );
+
+            reminderRepository
+                    .save(
+                            reminder
+                    );
+        }
     }
-
     // =====================================
     // CREATE ACTIVITY
     // =====================================
@@ -974,6 +1024,8 @@ public class TodoServiceImpl
     // =====================================
     // SEND NOTIFICATION TO SHARED USERS
     // =====================================
+
+
     private void sendNotificationToSharedUsers(
 
             Todo todo,
@@ -988,17 +1040,28 @@ public class TodoServiceImpl
 
     ) {
 
-        List<TodoShare> sharedUsers =
+        List<User> receivers =
+                new java.util.ArrayList<>();
+
+        // ADD OWNER
+        receivers.add(
+                todo.getOwner()
+        );
+
+        // ADD SHARED USERS
+        receivers.addAll(
+
                 todoShareRepository
-                        .findAllByTodoAndActiveTrue(todo);
+                        .findAllByTodoAndActiveTrue(todo)
+                        .stream()
+                        .map(TodoShare::getSharedWithUser)
+                        .toList()
+        );
 
-        for (TodoShare share : sharedUsers) {
+        for (User receiver : receivers) {
 
-            User sharedUser =
-                    share.getSharedWithUser();
-
-            // PREVENT SELF NOTIFICATION
-            if (sharedUser.getId()
+            // SKIP ACTION USER
+            if (receiver.getId()
                     .equals(actionUser.getId())) {
 
                 continue;
@@ -1007,9 +1070,11 @@ public class TodoServiceImpl
             notificationHelperService
                     .createNotification(
 
-                            sharedUser,
+                            receiver,
 
-                            todo,
+                            todo.getId(),
+
+                            NotificationReferenceType.TODO,
 
                             title,
 
@@ -1020,7 +1085,7 @@ public class TodoServiceImpl
 
             UserAuth auth =
                     userAuthRepository
-                            .findByUser(sharedUser)
+                            .findByUser(receiver)
                             .orElse(null);
 
             if (auth == null
@@ -1030,36 +1095,107 @@ public class TodoServiceImpl
                 continue;
             }
 
-            try {
+            firebaseNotificationService
+                    .sendNotification(
 
-                firebaseNotificationService
-                        .sendNotification(
+                            auth.getFcmToken(),
 
-                                auth.getFcmToken(),
+                            title,
 
-                                title,
+                            message,
 
-                                message,
+                            todo.getId(),
 
-                                todo.getId(),
-
-                                type
-                        );
-
-            } catch (Exception e) {
-
-                // INVALID TOKEN HANDLING
-                auth.setFcmToken(null);
-
-                userAuthRepository.save(auth);
-
-                log.error(
-                        "Invalid FCM token removed for user : {}",
-                        sharedUser.getId()
-                );
-            }
+                            type
+                    );
         }
     }
+//    private void sendNotificationToSharedUsers(
+//
+//            Todo todo,
+//
+//            User actionUser,
+//
+//            String title,
+//
+//            String message,
+//
+//            NotificationType type
+//
+//    ) {
+//
+//        List<TodoShare> sharedUsers =
+//                todoShareRepository
+//                        .findAllByTodoAndActiveTrue(todo);
+//
+//        for (TodoShare share : sharedUsers) {
+//
+//            User sharedUser =
+//                    share.getSharedWithUser();
+//
+//            // PREVENT SELF NOTIFICATION
+//            if (sharedUser.getId()
+//                    .equals(actionUser.getId())) {
+//
+//                continue;
+//            }
+//
+//            notificationHelperService
+//                    .createNotification(
+//
+//                            sharedUser,
+//
+//                            todo,
+//
+//                            title,
+//
+//                            message,
+//
+//                            type
+//                    );
+//
+//            UserAuth auth =
+//                    userAuthRepository
+//                            .findByUser(sharedUser)
+//                            .orElse(null);
+//
+//            if (auth == null
+//                    || auth.getFcmToken() == null
+//                    || auth.getFcmToken().isBlank()) {
+//
+//                continue;
+//            }
+//
+//            try {
+//
+//                firebaseNotificationService
+//                        .sendNotification(
+//
+//                                auth.getFcmToken(),
+//
+//                                title,
+//
+//                                message,
+//
+//                                todo.getId(),
+//
+//                                type
+//                        );
+//
+//            } catch (Exception e) {
+//
+//                // INVALID TOKEN HANDLING
+//                auth.setFcmToken(null);
+//
+//                userAuthRepository.save(auth);
+//
+//                log.error(
+//                        "Invalid FCM token removed for user : {}",
+//                        sharedUser.getId()
+//                );
+//            }
+//        }
+//    }
 
     // =====================================
     // VALIDATE ACCESS
