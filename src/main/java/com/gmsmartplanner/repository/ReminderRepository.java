@@ -3,6 +3,8 @@ package com.gmsmartplanner.repository;
 import com.gmsmartplanner.entity.Reminder;
 import com.gmsmartplanner.enums.NotificationReferenceType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,11 +39,18 @@ public interface ReminderRepository
     // DELETE
     // =====================================
 
+    @Transactional
+    @Modifying
     void deleteAllByReferenceIdAndReferenceType(
+            Long referenceId,
+            NotificationReferenceType referenceType
+    );
+
+    boolean
+    existsByReferenceIdAndReferenceTypeAndSentFalse(
 
             Long referenceId,
 
-            NotificationReferenceType
-                    referenceType
+            NotificationReferenceType type
     );
 }

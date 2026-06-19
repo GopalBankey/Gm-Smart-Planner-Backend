@@ -475,6 +475,9 @@ public class MedicineServiceImpl
                         .save(
                                 medicine
                         );
+        createLowStockNotification(
+                updated
+        );
 
 // RECREATE REMINDERS
 
@@ -821,6 +824,95 @@ public class MedicineServiceImpl
 
                         NotificationReferenceType
                                 .MEDICINE
+                );
+    }private void createLowStockNotification(
+
+            Medicine medicine
+
+    ) {
+
+        if (
+
+                !medicine.isRefillReminder()
+
+                        ||
+
+                        medicine.getCurrentStock()
+                                == null
+
+                        ||
+
+                        medicine.getCurrentStock()
+                                > 5
+
+        ) {
+
+            return;
+        }
+
+        boolean exists =
+
+                reminderRepository
+
+                        .existsByReferenceIdAndReferenceTypeAndSentFalse(
+
+                                medicine.getId(),
+
+                                NotificationReferenceType
+                                        .REPORT
+                        );
+
+        if (
+
+                exists
+
+        ) {
+
+            return;
+        }
+
+        Reminder reminder =
+                new Reminder();
+
+        reminder.setUser(
+                medicine.getUser()
+        );
+
+        reminder.setReferenceId(
+                medicine.getId()
+        );
+
+        // LOW STOCK → REPORT
+
+        reminder.setReferenceType(
+
+                NotificationReferenceType
+                        .REPORT
+        );
+
+        reminder.setReminderTime(
+
+                LocalDateTime.now()
+                        .plusMinutes(
+                                1
+                        )
+        );
+
+        reminder.setRecurring(
+                false
+        );
+
+        reminder.setSent(
+                false
+        );
+
+        reminder.setActive(
+                true
+        );
+
+        reminderRepository
+                .save(
+                        reminder
                 );
     }
 }

@@ -14,6 +14,12 @@ import com.gmsmartplanner.service.health.MedicineRefillReminderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.gmsmartplanner.entity.Reminder;
+import com.gmsmartplanner.enums.NotificationReferenceType;
+import com.gmsmartplanner.repository.ReminderRepository;
+
+import java.time.LocalDateTime;
+
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +38,9 @@ public class MedicineRefillReminderServiceImpl
 
     private final UserHelperService
             userHelperService;
+
+    private final ReminderRepository
+            reminderRepository;
 
     // =====================================
     // GET
@@ -148,12 +157,19 @@ public class MedicineRefillReminderServiceImpl
             );
         }
 
-        return mapper.toResponse(
+        MedicineRefillReminder saved =
 
                 repository
                         .save(
                                 reminder
-                        )
+                        );
+
+        updateRefillSchedule(
+                saved
+        );
+
+        return mapper.toResponse(
+                saved
         );
     }
 
@@ -212,6 +228,92 @@ public class MedicineRefillReminderServiceImpl
 
                                         "Refill reminder not found"
                                 )
+                );
+    }
+
+    private void updateRefillSchedule(
+
+            MedicineRefillReminder refill
+
+    ) {
+
+        reminderRepository
+
+                .deleteAllByReferenceIdAndReferenceType(
+
+                        refill
+                                .getMedicine()
+                                .getId(),
+
+                        NotificationReferenceType
+                                .REPORT
+                );
+
+        if (
+
+                refill.getNextReminderDate()
+                        == null
+
+                        ||
+
+                        refill.getNextReminderTime()
+                                == null
+
+        ) {
+
+            return;
+        }
+
+        Reminder reminder =
+                new Reminder();
+
+        reminder.setUser(
+
+                refill
+                        .getMedicine()
+                        .getUser()
+        );
+
+        reminder.setReferenceId(
+
+                refill
+                        .getMedicine()
+                        .getId()
+        );
+
+        // REFILL TYPE
+
+        reminder.setReferenceType(
+
+                NotificationReferenceType
+                        .REPORT
+        );
+
+        reminder.setReminderTime(
+
+                LocalDateTime.of(
+
+                        refill.getNextReminderDate(),
+
+                        refill.getNextReminderTime()
+                )
+        );
+
+        reminder.setRecurring(
+                false
+        );
+
+        reminder.setSent(
+                false
+        );
+
+        reminder.setActive(
+                true
+        );
+
+        reminderRepository
+                .save(
+                        reminder
                 );
     }
 }

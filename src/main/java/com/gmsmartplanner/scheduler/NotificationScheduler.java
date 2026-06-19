@@ -13,6 +13,8 @@ import com.gmsmartplanner.repository.AccountAccessRepository;
 import com.gmsmartplanner.repository.ReminderRepository;
 import com.gmsmartplanner.repository.UserAuthRepository;
 import com.gmsmartplanner.repository.health.AppointmentRepository;
+import com.gmsmartplanner.repository.health.MedicineRepository;
+import com.gmsmartplanner.repository.todo.TodoRepository;
 import com.gmsmartplanner.service.FirebaseNotificationService;
 import com.gmsmartplanner.service.NotificationHelperService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +48,12 @@ public class NotificationScheduler {
 
     private final NotificationHelperService
             notificationHelperService;
+
+    private final MedicineRepository
+            medicineRepository;
+
+    private final TodoRepository
+            todoRepository;
 
     // =====================================
     // MAIN
@@ -95,10 +103,19 @@ public class NotificationScheduler {
                                 .getUser();
 
                 String title =
-                        "Reminder";
+                        buildTitle(
+                                reminder
+                        );
 
                 String message =
-                        "You have a scheduled reminder";
+                        buildMessage(
+
+                                reminder,
+
+                                owner,
+
+                                false
+                        );
 
                 NotificationType type =
                         resolveType(
@@ -129,6 +146,16 @@ public class NotificationScheduler {
 
                                 NotificationReferenceType
                                         .TODO
+
+                                ||
+
+                                reminder
+                                        .getReferenceType()
+
+                                        ==
+
+                                        NotificationReferenceType
+                                                .REPORT
 
                 ) {
 
@@ -219,9 +246,14 @@ public class NotificationScheduler {
 
                             title,
 
-                            owner.getName()
-                                    +
-                                    " has a scheduled reminder",
+                            buildMessage(
+
+                                    reminder,
+
+                                    owner,
+
+                                    true
+                            ),
 
                             type
                     );
@@ -253,6 +285,13 @@ public class NotificationScheduler {
                         "Reminder failed : {}",
 
                         reminder.getId(),
+
+                        e
+                );
+
+                log.error(
+
+                        "FCM ERROR",
 
                         e
                 );
@@ -372,7 +411,8 @@ public class NotificationScheduler {
 
                 ) {
 
-            case MEDICINE ->
+            case MEDICINE,
+                 REPORT ->
 
                     Boolean.TRUE.equals(
 
@@ -417,11 +457,11 @@ public class NotificationScheduler {
                     NotificationType
                             .TODO_REMINDER;
 
-            case MEDICINE ->
+            case MEDICINE,
+                 REPORT ->
 
                     NotificationType
                             .MEDICINE_REMINDER;
-
             case APPOINTMENT ->
 
                     NotificationType
@@ -433,6 +473,232 @@ public class NotificationScheduler {
                             .SYSTEM;
         };
     }
+
+    private String
+    buildTitle(
+
+            Reminder reminder
+
+    ) {
+
+        return switch (
+
+                reminder
+                        .getReferenceType()
+
+                ) {
+
+            case TODO ->
+
+                    "Task Reminder";
+
+            case MEDICINE ->
+
+                    "Medicine Reminder";
+
+            case REPORT ->
+
+                    "Medicine Refill Alert";
+
+            case APPOINTMENT ->
+
+                    "Appointment Reminder";
+
+            default ->
+
+                    "Reminder";
+        };
+    }
+
+    private String
+    buildMessage(
+
+            Reminder reminder,
+
+            User owner,
+
+            boolean accessUser
+
+    ) {
+
+        String prefix =
+
+                accessUser
+
+                        ?
+
+                        owner.getName()
+                                + "'s "
+
+                        :
+
+                        "";
+
+        try {
+
+            switch (
+
+                    reminder
+                            .getReferenceType()
+
+            ) {
+
+                case MEDICINE -> {
+
+                    var medicine =
+
+                            medicineRepository
+
+                                    .findById(
+
+                                            reminder
+                                                    .getReferenceId()
+                                    )
+
+                                    .orElse(
+                                            null
+                                    );
+
+                    if (
+
+                            medicine != null
+
+                    ) {
+
+                        return prefix
+
+                                +
+
+                                medicine
+                                        .getMedicineName()
+
+                                +
+
+                                " medicine time";
+                    }
+
+                }
+
+                case REPORT -> {
+
+                    var medicine =
+
+                            medicineRepository
+
+                                    .findById(
+
+                                            reminder
+                                                    .getReferenceId()
+                                    )
+
+                                    .orElse(
+                                            null
+                                    );
+
+                    if (
+
+                            medicine != null
+
+                    ) {
+
+                        return prefix
+
+                                +
+
+                                medicine
+                                        .getMedicineName()
+
+                                +
+
+                                " stock is low. Please refill";
+                    }
+
+                }
+
+                case APPOINTMENT -> {
+
+                    var appointment =
+
+                            appointmentRepository
+
+                                    .findById(
+
+                                            reminder
+                                                    .getReferenceId()
+                                    )
+
+                                    .orElse(
+                                            null
+                                    );
+
+                    if (
+
+                            appointment != null
+
+                    ) {
+
+                        return prefix
+
+                                +
+
+                                appointment
+                                        .getDoctor()
+                                        .getDoctorName()
+
+                                +
+
+                                " appointment scheduled";
+                    }
+
+                }
+
+                case TODO -> {
+
+                    var todo =
+
+                            todoRepository
+
+                                    .findById(
+
+                                            reminder
+                                                    .getReferenceId()
+                                    )
+
+                                    .orElse(
+                                            null
+                                    );
+
+                    if (
+
+                            todo != null
+
+                    ) {
+
+                        return prefix
+
+                                +
+
+                                todo
+                                        .getTitle();
+                    }
+
+                }
+            }
+
+        }
+
+        catch (
+
+                Exception ignored
+
+        ) {
+        }
+
+        return prefix
+                +
+                "scheduled reminder";
+    }
+
 
     // =====================================
     // APPOINTMENTS

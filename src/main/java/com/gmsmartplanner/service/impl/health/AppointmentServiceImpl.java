@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import com.gmsmartplanner.entity.Reminder;
 import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.repository.ReminderRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -365,6 +366,7 @@ public class AppointmentServiceImpl
     // =====================================
 
     @Override
+    @Transactional
     public void deleteAppointment(
 
             String username,
