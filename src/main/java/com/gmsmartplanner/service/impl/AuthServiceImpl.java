@@ -16,6 +16,7 @@ import com.gmsmartplanner.repository.UserRepository;
 import com.gmsmartplanner.service.AuthService;
 import com.gmsmartplanner.service.EmailService;
 import com.gmsmartplanner.service.RefreshTokenService;
+import com.gmsmartplanner.service.UserHelperService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,9 @@ public class AuthServiceImpl
 
     private final EmailService
             emailService;
+
+    private final UserHelperService
+            userHelperService;
 
     private static final SecureRandom
             SECURE_RANDOM = new SecureRandom();
@@ -771,6 +775,91 @@ public class AuthServiceImpl
         log.info(
                 "Logout successful for user id : {}",
                 auth.getUser().getId()
+        );
+    }
+
+
+    @Override
+    @Transactional
+    public void deleteAccount(
+
+            String username
+
+    ) {
+
+        User user =
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        UserAuth auth =
+
+                getUserAuth(
+                        user
+                );
+
+        // =========================
+        // CLEAR TOKENS
+        // =========================
+
+        auth.setJwtToken(
+                null
+        );
+
+        auth.setFcmToken(
+                null
+        );
+
+        userAuthRepository
+                .save(
+                        auth
+                );
+
+        refreshTokenService
+                .deleteByAuth(
+                        auth
+                );
+
+        // =========================
+        // SOFT DELETE
+        // =========================
+
+        user.setName(
+                "Deleted User"
+        );
+
+        user.setEmail(
+                null
+        );
+
+        user.setMobileNumber(
+                null
+        );
+
+        user.setProfileImageUrl(
+                null
+        );
+
+        user.setProfileCompleted(
+                false
+        );
+
+        user.setActive(
+                false
+        );
+
+        userRepository
+                .save(
+                        user
+                );
+
+        log.info(
+
+                "Account deleted successfully : {}",
+
+                user.getId()
         );
     }
 

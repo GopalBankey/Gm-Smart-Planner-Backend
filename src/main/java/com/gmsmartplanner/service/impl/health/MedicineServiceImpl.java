@@ -88,6 +88,9 @@ public class MedicineServiceImpl
                         .createMedicine(
                                 dto
                         );
+        medicine.setLastActionBy(
+                user
+        );
 
         medicine.setUser(
                 user
@@ -312,6 +315,14 @@ public class MedicineServiceImpl
         medicineMapper.updateMedicine(
                 medicine,
                 dto
+        );
+
+        medicine.setLastActionBy(
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        )
         );
 
         setDoctor(

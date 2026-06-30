@@ -82,5 +82,7 @@ public enum NotificationType {
     // SYSTEM
     // =====================================
 
-    SYSTEM
+    SYSTEM,
+
+    EMI_REMINDER
 }

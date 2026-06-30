@@ -151,4 +151,15 @@ public class Appointment
     )
     private boolean active =
             true;
+
+    @ManyToOne(
+            fetch =
+                    FetchType.LAZY
+    )
+    @JoinColumn(
+            name =
+                    "last_action_by"
+    )
+    private User
+            lastActionBy;
 }

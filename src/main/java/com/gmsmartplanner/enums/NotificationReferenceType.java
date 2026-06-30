@@ -25,5 +25,6 @@ public enum NotificationReferenceType {
     COMMENT,
 
     SYSTEM,
-    USER
+    USER,
+    EMI
 }

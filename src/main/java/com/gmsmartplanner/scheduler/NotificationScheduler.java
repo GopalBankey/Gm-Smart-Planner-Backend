@@ -12,6 +12,7 @@ import com.gmsmartplanner.enums.health.AppointmentStatus;
 import com.gmsmartplanner.repository.AccountAccessRepository;
 import com.gmsmartplanner.repository.ReminderRepository;
 import com.gmsmartplanner.repository.UserAuthRepository;
+import com.gmsmartplanner.repository.budget.EmiRepository;
 import com.gmsmartplanner.repository.health.AppointmentRepository;
 import com.gmsmartplanner.repository.health.MedicineRepository;
 import com.gmsmartplanner.repository.todo.TodoRepository;
@@ -54,6 +55,9 @@ public class NotificationScheduler {
 
     private final TodoRepository
             todoRepository;
+
+    private final EmiRepository
+            emiRepository;
 
     // =====================================
     // MAIN
@@ -122,6 +126,22 @@ public class NotificationScheduler {
                                 reminder
                         );
 
+                AccountAccess access =
+
+                        accountAccessRepository
+
+                                .findByOwnerAndModule(
+
+                                        owner,
+
+                                        AccessModule
+                                                .HEALTH
+                                )
+
+                                .orElse(
+                                        null
+                                );
+
                 // =====================
                 // OWNER
                 // =====================
@@ -139,23 +159,21 @@ public class NotificationScheduler {
 
                 if (
 
-                        reminder
-                                .getReferenceType()
-
+                        reminder.getReferenceType()
                                 ==
-
-                                NotificationReferenceType
-                                        .TODO
+                                NotificationReferenceType.TODO
 
                                 ||
 
-                                reminder
-                                        .getReferenceType()
-
+                                reminder.getReferenceType()
                                         ==
+                                        NotificationReferenceType.REPORT
 
-                                        NotificationReferenceType
-                                                .REPORT
+                                ||
+
+                                reminder.getReferenceType()
+                                        ==
+                                        NotificationReferenceType.EMI
 
                 ) {
 
@@ -173,25 +191,6 @@ public class NotificationScheduler {
                     );
                 }
 
-// =====================
-// ACCESS MEMBER
-// =====================
-
-                AccountAccess access =
-
-                        accountAccessRepository
-
-                                .findByOwnerAndModule(
-
-                                        owner,
-
-                                        AccessModule
-                                                .HEALTH
-                                )
-
-                                .orElse(
-                                        null
-                                );
 
                 if (
 
@@ -238,6 +237,115 @@ public class NotificationScheduler {
                     User member =
                             access.getMember();
 
+                    if (
+
+                            reminder.getReferenceType()
+
+                                    ==
+
+                                    NotificationReferenceType
+                                            .MEDICINE
+
+                                    ||
+
+                                    reminder.getReferenceType()
+
+                                            ==
+
+                                            NotificationReferenceType
+                                                    .REPORT
+
+                    ) {
+
+                        var medicine =
+
+                                medicineRepository
+
+                                        .findById(
+
+                                                reminder
+                                                        .getReferenceId()
+                                        )
+
+                                        .orElse(
+                                                null
+                                        );
+
+                        if (
+
+                                medicine != null
+
+                                        &&
+
+                                        medicine.getLastActionBy()
+                                                != null
+
+                                        &&
+
+                                        medicine
+                                                .getLastActionBy()
+                                                .getId()
+                                                .equals(
+
+                                                        member.getId()
+                                                )
+
+                        ) {
+
+                            continue;
+                        }
+                    }
+
+                    if (
+
+                            reminder.getReferenceType()
+
+                                    ==
+
+                                    NotificationReferenceType
+                                            .APPOINTMENT
+
+                    ) {
+
+                        var appointment =
+
+                                appointmentRepository
+
+                                        .findById(
+
+                                                reminder
+                                                        .getReferenceId()
+                                        )
+
+                                        .orElse(
+                                                null
+                                        );
+
+                        if (
+
+                                appointment != null
+
+                                        &&
+
+                                        appointment.getLastActionBy()
+                                                != null
+
+                                        &&
+
+                                        appointment
+                                                .getLastActionBy()
+                                                .getId()
+                                                .equals(
+
+                                                        member.getId()
+                                                )
+
+                        ) {
+
+                            continue;
+                        }
+                    }
+
                     sendNotification(
 
                             member,
@@ -258,6 +366,9 @@ public class NotificationScheduler {
                             type
                     );
                 }
+
+
+
 
                 reminder.setSent(
                         true
@@ -466,6 +577,10 @@ public class NotificationScheduler {
 
                     NotificationType
                             .APPOINTMENT_REMINDER;
+            case EMI ->
+
+                    NotificationType
+                            .EMI_REMINDER;
 
             default ->
 
@@ -503,6 +618,9 @@ public class NotificationScheduler {
             case APPOINTMENT ->
 
                     "Appointment Reminder";
+            case EMI ->
+
+                    "EMI Reminder";
 
             default ->
 
@@ -682,6 +800,47 @@ public class NotificationScheduler {
                                         .getTitle();
                     }
 
+                }
+                case EMI -> {
+
+                    var emi =
+
+                            emiRepository
+                                    .findById(
+
+                                            reminder
+                                                    .getReferenceId()
+                                    )
+
+                                    .orElse(
+                                            null
+                                    );
+
+                    if (
+
+                            emi != null
+
+                    ) {
+
+                        return prefix
+
+                                +
+
+                                emi.getCategory()
+                                        .getName()
+
+                                +
+
+                                " EMI payment of ₹"
+
+                                +
+
+                                emi.getEmiAmount()
+
+                                +
+
+                                " is due today";
+                    }
                 }
             }
 

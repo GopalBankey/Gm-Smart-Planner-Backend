@@ -5,7 +5,6 @@ import com.gmsmartplanner.dto.response.LoginResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
 import com.gmsmartplanner.service.AuthService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -13,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+
 
 @Validated
 @RestController
@@ -252,6 +253,47 @@ public class AuthController {
                                         .resendOtp(
                                                 dto
                                         )
+                        )
+
+                        .build()
+        );
+    }
+
+    // =========================================
+// DELETE ACCOUNT
+// =========================================
+
+    @DeleteMapping(
+            "/delete-account"
+    )
+    public ResponseEntity<ApiResponse<String>>
+    deleteAccount(
+
+            Authentication authentication
+
+    ) {
+
+        authService.deleteAccount(
+
+                authentication
+                        .getName()
+        );
+
+        return ResponseEntity.ok(
+
+                ApiResponse
+                        .<String>builder()
+
+                        .success(
+                                true
+                        )
+
+                        .message(
+                                "Account deleted successfully"
+                        )
+
+                        .data(
+                                null
                         )
 
                         .build()

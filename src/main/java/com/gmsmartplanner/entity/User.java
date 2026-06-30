@@ -84,4 +84,11 @@ public class User extends BaseEntity {
 
     @Column(nullable = false,name = "profile_completed")
     private boolean profileCompleted = false;
+
+    @Column(
+            nullable = false,
+            name = "is_active"
+    )
+    private boolean active =
+            true;
 }

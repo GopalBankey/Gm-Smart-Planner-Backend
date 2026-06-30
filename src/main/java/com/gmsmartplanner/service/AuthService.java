@@ -33,4 +33,13 @@ public interface AuthService {
     String resendOtp(
             ResendOtpRequestDTO dto
     );
+
+    // =========================================
+// DELETE ACCOUNT
+// =========================================
+
+    void deleteAccount(
+
+            String username
+    );
 }

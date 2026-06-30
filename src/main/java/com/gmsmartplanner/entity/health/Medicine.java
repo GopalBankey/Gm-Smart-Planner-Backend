@@ -166,6 +166,19 @@ public class Medicine
     private boolean active =
             true;
 
+
+    @ManyToOne(
+            fetch =
+                    FetchType.LAZY
+    )
+    @JoinColumn(
+            name =
+                    "last_action_by"
+    )
+    private User
+            lastActionBy;
+
+
     @OneToMany(
 
             mappedBy =

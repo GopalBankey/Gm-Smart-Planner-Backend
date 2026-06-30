@@ -125,6 +125,10 @@ public class AppointmentServiceImpl
                         .UPCOMING
         );
 
+        appointment.setLastActionBy(
+                user
+        );
+
         Appointment saved =
                 appointmentRepository
                         .save(
@@ -310,6 +314,10 @@ public class AppointmentServiceImpl
 
         createAppointmentReminder(
                 updated
+        );
+
+        appointment.setLastActionBy(
+                user
         );
 
         return appointmentMapper
