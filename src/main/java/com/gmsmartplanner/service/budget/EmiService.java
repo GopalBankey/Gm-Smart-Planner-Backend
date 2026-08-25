@@ -2,6 +2,7 @@ package com.gmsmartplanner.service.budget;
 
 import com.gmsmartplanner.dto.request.budget.CreateEmiRequestDTO;
 import com.gmsmartplanner.dto.request.budget.UpdateEmiRequestDTO;
+import com.gmsmartplanner.dto.response.budget.EmiPaymentHistoryResponseDTO;
 import com.gmsmartplanner.dto.response.budget.EmiResponseDTO;
 
 import java.util.List;
@@ -57,6 +58,29 @@ public interface EmiService {
     // =====================================
 
     void deleteEmi(
+
+            String username,
+
+            Long emiId
+    );
+
+    // =====================================
+// PAY EMI
+// =====================================
+
+    void payEmi(
+
+            String username,
+
+            Long emiId
+    );
+
+// =====================================
+// EMI PAYMENT HISTORY
+// =====================================
+
+    List<EmiPaymentHistoryResponseDTO>
+    getPaymentHistory(
 
             String username,
 

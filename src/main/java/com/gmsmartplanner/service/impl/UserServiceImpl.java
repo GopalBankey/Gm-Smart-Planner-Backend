@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -169,10 +170,13 @@ public class UserServiceImpl
                     emailOtp
             );
 
+            userAuth.setEmailOtpCreatedAt(
+                    LocalDateTime.now()
+            );
+
             userAuth.setEmailOtpVerified(
                     false
             );
-
             userAuth.setEmailVerified(
                     false
             );
@@ -208,9 +212,17 @@ public class UserServiceImpl
             String otp =
                     generateOtp();
 
-            userAuth.setOtp(otp);
+            userAuth.setOtp(
+                    otp
+            );
 
-            userAuth.setOtpVerified(false);
+            userAuth.setOtpCreatedAt(
+                    LocalDateTime.now()
+            );
+
+            userAuth.setOtpVerified(
+                    false
+            );
 
             userRepository.save(user);
 
@@ -238,6 +250,10 @@ public class UserServiceImpl
     // VERIFY MOBILE OTP
     // =========================================
 
+    // =========================================
+// VERIFY MOBILE OTP
+// =========================================
+
     @Override
     public User verifyMobileOtp(
 
@@ -253,25 +269,31 @@ public class UserServiceImpl
         );
 
         User user =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
 
         UserAuth userAuth =
                 getUserAuth(user);
 
+        // =====================================
         // ONLY GOOGLE USER
+        // =====================================
 
-        if (userAuth.getLoginType()
-                != LoginType.GOOGLE) {
+        if (
+                userAuth.getLoginType()
+                        != LoginType.GOOGLE
+        ) {
 
             throw new InvalidRequestException(
                     "Mobile verification not required"
             );
         }
 
+        // =====================================
         // ALREADY VERIFIED
+        // =====================================
 
         if (userAuth.isOtpVerified()) {
 
@@ -280,32 +302,50 @@ public class UserServiceImpl
             );
         }
 
+        // =====================================
+        // VALIDATE OTP + EXPIRY
+        // =====================================
+
         validateOtp(
-
                 userAuth,
-
                 dto.getOtp()
         );
+
+        // =====================================
+        // MARK VERIFIED
+        // =====================================
 
         userAuth.setOtpVerified(true);
 
         userAuth.setOtp(null);
 
+        userAuth.setOtpCreatedAt(null);
+
+        // =====================================
         // PROFILE COMPLETED
+        // =====================================
 
         if (userAuth.isEmailVerified()) {
 
             user.setProfileCompleted(true);
         }
 
-        userAuthRepository.save(userAuth);
+        userAuthRepository.save(
+                userAuth
+        );
 
-        return userRepository.save(user);
+        return userRepository.save(
+                user
+        );
     }
 
     // =========================================
     // VERIFY EMAIL OTP
     // =========================================
+
+// =========================================
+// VERIFY EMAIL OTP
+// =========================================
 
     @Override
     public User verifyEmailOtp(
@@ -322,25 +362,31 @@ public class UserServiceImpl
         );
 
         User user =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
 
         UserAuth userAuth =
                 getUserAuth(user);
 
+        // =====================================
         // ONLY MOBILE USER
+        // =====================================
 
-        if (userAuth.getLoginType()
-                != LoginType.MOBILE) {
+        if (
+                userAuth.getLoginType()
+                        != LoginType.MOBILE
+        ) {
 
             throw new InvalidRequestException(
                     "Email verification not required"
             );
         }
 
+        // =====================================
         // ALREADY VERIFIED
+        // =====================================
 
         if (userAuth.isEmailOtpVerified()) {
 
@@ -349,25 +395,79 @@ public class UserServiceImpl
             );
         }
 
-        // VALIDATE EMAIL OTP
+        // =====================================
+        // OTP REQUIRED
+        // =====================================
 
-        if (dto.getOtp() == null
-                || dto.getOtp().isBlank()) {
+        if (
+                dto.getOtp() == null
+                        ||
+                        dto.getOtp().isBlank()
+        ) {
 
             throw new InvalidOtpException(
                     "OTP is required"
             );
         }
 
-        if (userAuth.getEmailOtp() == null
-                || !userAuth.getEmailOtp().equals(
-                dto.getOtp()
-        )) {
+        // =====================================
+        // OTP NOT AVAILABLE
+        // =====================================
+
+        if (
+                userAuth.getEmailOtp() == null
+                        ||
+                        userAuth.getEmailOtpCreatedAt() == null
+        ) {
+
+            throw new InvalidOtpException(
+                    "Email OTP has expired. Please request a new OTP."
+            );
+        }
+
+        // =====================================
+        // OTP EXPIRY - 2 MINUTES
+        // =====================================
+
+        if (
+                !LocalDateTime.now()
+                        .isBefore(
+                                userAuth
+                                        .getEmailOtpCreatedAt()
+                                        .plusMinutes(2)
+                        )
+        ) {
+
+            userAuth.setEmailOtp(null);
+
+            userAuth.setEmailOtpCreatedAt(null);
+
+            userAuthRepository.save(
+                    userAuth
+            );
+
+            throw new InvalidOtpException(
+                    "Email OTP has expired. Please request a new OTP."
+            );
+        }
+
+        // =====================================
+        // OTP VALIDATION
+        // =====================================
+
+        if (
+                !userAuth.getEmailOtp()
+                        .equals(dto.getOtp())
+        ) {
 
             throw new InvalidOtpException(
                     "Invalid email OTP"
             );
         }
+
+        // =====================================
+        // MARK VERIFIED
+        // =====================================
 
         userAuth.setEmailOtpVerified(true);
 
@@ -375,11 +475,17 @@ public class UserServiceImpl
 
         userAuth.setEmailOtp(null);
 
+        userAuth.setEmailOtpCreatedAt(null);
+
         user.setProfileCompleted(true);
 
-        userAuthRepository.save(userAuth);
+        userAuthRepository.save(
+                userAuth
+        );
 
-        return userRepository.save(user);
+        return userRepository.save(
+                user
+        );
     }
 
     // =========================================
@@ -614,6 +720,14 @@ public class UserServiceImpl
     // VALIDATE OTP
     // =========================================
 
+    // =========================================
+// VALIDATE OTP
+// =========================================
+
+// =========================================
+// VALIDATE MOBILE OTP
+// =========================================
+
     private void validateOtp(
 
             UserAuth userAuth,
@@ -622,24 +736,103 @@ public class UserServiceImpl
 
     ) {
 
-        if (enteredOtp == null
-                || enteredOtp.isBlank()) {
+        // =====================================
+        // OTP REQUIRED
+        // =====================================
+
+        if (
+                enteredOtp == null
+                        ||
+                        enteredOtp.isBlank()
+        ) {
 
             throw new InvalidOtpException(
                     "OTP is required"
             );
         }
 
-        if (userAuth.getOtp() == null
-                || !userAuth.getOtp().equals(
-                enteredOtp
-        )) {
+        // =====================================
+        // OTP NOT AVAILABLE
+        // =====================================
+
+        if (
+                userAuth.getOtp() == null
+                        ||
+                        userAuth.getOtpCreatedAt() == null
+        ) {
+
+            throw new InvalidOtpException(
+                    "OTP has expired. Please request a new OTP."
+            );
+        }
+
+        // =====================================
+        // OTP EXPIRY - 2 MINUTES
+        // =====================================
+
+        if (
+                !LocalDateTime.now()
+                        .isBefore(
+                                userAuth
+                                        .getOtpCreatedAt()
+                                        .plusMinutes(2)
+                        )
+        ) {
+
+            userAuth.setOtp(null);
+
+            userAuth.setOtpCreatedAt(null);
+
+            userAuthRepository.save(
+                    userAuth
+            );
+
+            throw new InvalidOtpException(
+                    "OTP has expired. Please request a new OTP."
+            );
+        }
+
+        // =====================================
+        // OTP VALIDATION
+        // =====================================
+
+        if (
+                !userAuth.getOtp()
+                        .equals(enteredOtp)
+        ) {
 
             throw new InvalidOtpException(
                     "Invalid OTP"
             );
         }
     }
+
+//    private void validateOtp(
+//
+//            UserAuth userAuth,
+//
+//            String enteredOtp
+//
+//    ) {
+//
+//        if (enteredOtp == null
+//                || enteredOtp.isBlank()) {
+//
+//            throw new InvalidOtpException(
+//                    "OTP is required"
+//            );
+//        }
+//
+//        if (userAuth.getOtp() == null
+//                || !userAuth.getOtp().equals(
+//                enteredOtp
+//        )) {
+//
+//            throw new InvalidOtpException(
+//                    "Invalid OTP"
+//            );
+//        }
+//    }
 
     // =========================================
     // GENERATE OTP

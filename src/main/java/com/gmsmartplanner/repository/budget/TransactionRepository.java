@@ -67,21 +67,7 @@ public interface TransactionRepository
     );
 
     // =====================================
-    // GET HOME TRANSACTIONS
-    // =====================================
-
-    List<Transaction>
-    findAllByUserAndTransactionDateBetweenOrderByTransactionDateDesc(
-
-            User user,
-
-            LocalDateTime startDate,
-
-            LocalDateTime endDate
-    );
-
-    // =====================================
-    // GET ALL
+    // GET ALL TRANSACTIONS
     // =====================================
 
     List<Transaction>
@@ -120,4 +106,5 @@ public interface TransactionRepository
 
     List<Transaction>
     findAllByRecurringTrueAndParentTrueAndActiveTrue();
+
 }

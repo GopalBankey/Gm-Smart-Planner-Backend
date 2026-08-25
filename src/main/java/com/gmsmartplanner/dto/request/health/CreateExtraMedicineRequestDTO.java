@@ -15,8 +15,10 @@ public class CreateExtraMedicineRequestDTO {
     @NotBlank
     private String medicineName;
 
+
     private String dosageStrength;
 
+    @NotBlank
     private MedicineForm form;
 
     private String purpose;
@@ -25,8 +27,10 @@ public class CreateExtraMedicineRequestDTO {
 
     private MultipartFile pillPhoto;
 
+    @NotBlank
     private Integer count;
 
+    @NotBlank
     private LocalDate expiryDate;
 
     private String companyName;

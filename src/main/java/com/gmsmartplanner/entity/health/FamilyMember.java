@@ -80,7 +80,8 @@ public class FamilyMember
 
     @Enumerated(EnumType.STRING)
     @Column(
-            name = "blood_group"
+            name = "blood_group",
+            nullable = false
     )
     private BloodGroup bloodGroup;
 

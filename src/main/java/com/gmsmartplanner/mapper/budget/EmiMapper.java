@@ -22,9 +22,23 @@ public class EmiMapper {
         Emi emi =
                 new Emi();
 
+
+
+        // =====================================
+        // BASIC
+        // =====================================
+
+        emi.setEmiName(
+                dto.getEmiName()
+        );
+
         emi.setType(
                 dto.getType()
         );
+
+        // =====================================
+        // LOAN DETAILS
+        // =====================================
 
         emi.setLoanAmount(
                 dto.getLoanAmount()
@@ -62,10 +76,6 @@ public class EmiMapper {
                 dto.getTotalInstallments()
         );
 
-        emi.setDurationMonths(
-                dto.getDurationMonths()
-        );
-
         emi.setEmiDueDate(
                 dto.getEmiDueDate()
         );
@@ -93,6 +103,22 @@ public class EmiMapper {
 
     ) {
 
+        // =====================================
+        // BASIC
+        // =====================================
+
+        if (
+
+                dto.getEmiName()
+                        != null
+
+        ) {
+
+            emi.setEmiName(
+                    dto.getEmiName()
+            );
+        }
+
         if (
 
                 dto.getType()
@@ -104,6 +130,10 @@ public class EmiMapper {
                     dto.getType()
             );
         }
+
+        // =====================================
+        // LOAN DETAILS
+        // =====================================
 
         if (
 
@@ -199,18 +229,6 @@ public class EmiMapper {
 
         if (
 
-                dto.getDurationMonths()
-                        != null
-
-        ) {
-
-            emi.setDurationMonths(
-                    dto.getDurationMonths()
-            );
-        }
-
-        if (
-
                 dto.getEmiDueDate()
                         != null
 
@@ -220,6 +238,10 @@ public class EmiMapper {
                     dto.getEmiDueDate()
             );
         }
+
+        // =====================================
+        // STATUS
+        // =====================================
 
         if (
 
@@ -268,6 +290,10 @@ public class EmiMapper {
                 .categoryIcon(
                         emi.getCategory()
                                 .getIcon()
+                )
+
+                .emiName(
+                        emi.getEmiName()
                 )
 
                 .type(
@@ -325,10 +351,6 @@ public class EmiMapper {
                                 -
 
                                 emi.getPaidInstallments()
-                )
-
-                .durationMonths(
-                        emi.getDurationMonths()
                 )
 
                 .emiDueDate(

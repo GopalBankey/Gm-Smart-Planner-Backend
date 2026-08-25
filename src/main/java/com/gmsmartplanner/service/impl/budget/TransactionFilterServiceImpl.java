@@ -66,9 +66,12 @@ public class TransactionFilterServiceImpl
 
         List<Transaction> transactions =
                 transactionRepository
-                        .findAllByUserAndTransactionDateBetweenOrderByTransactionDateDesc(
+                        .findAllByUserAndTransactionDateBetweenAndActiveTrueOrderByTransactionDateDesc(
+
                                 user,
+
                                 startDate,
+
                                 endDate
                         );
 
@@ -102,14 +105,18 @@ public class TransactionFilterServiceImpl
         BigDecimal totalIncome =
                 transactionRepository
                         .getTotalAmountByType(
+
                                 user,
+
                                 TransactionType.INCOME
                         );
 
         BigDecimal totalExpense =
                 transactionRepository
                         .getTotalAmountByType(
+
                                 user,
+
                                 TransactionType.EXPENSE
                         );
 
@@ -118,8 +125,7 @@ public class TransactionFilterServiceImpl
                         totalExpense
                 );
 
-        List<TransactionResponseDTO>
-                recentTransactions =
+        List<TransactionResponseDTO> recentTransactions =
                 transactions.stream()
                         .limit(10)
                         .map(transactionMapper::mapToResponse)
@@ -136,6 +142,103 @@ public class TransactionFilterServiceImpl
                 .recentTransactions(recentTransactions)
                 .build();
     }
+
+//    @Override
+//    public BudgetHomeResponseDTO getHomeData(
+//
+//            String username,
+//
+//            String month
+//
+//    ) {
+//
+//        User user =
+//                userHelperService
+//                        .getCurrentUser(username);
+//
+//        YearMonth yearMonth =
+//                YearMonth.parse(month);
+//
+//        LocalDateTime startDate =
+//                yearMonth.atDay(1)
+//                        .atStartOfDay();
+//
+//        LocalDateTime endDate =
+//                yearMonth.atEndOfMonth()
+//                        .atTime(23, 59, 59);
+//
+//        List<Transaction> transactions =
+//                transactionRepository
+//                        .findAllByUserAndTransactionDateBetweenOrderByTransactionDateDesc(
+//                                user,
+//                                startDate,
+//                                endDate
+//                        );
+//
+//        BigDecimal income =
+//                transactions.stream()
+//                        .filter(t ->
+//                                t.getType()
+//                                        == TransactionType.INCOME
+//                        )
+//                        .map(Transaction::getAmount)
+//                        .reduce(
+//                                BigDecimal.ZERO,
+//                                BigDecimal::add
+//                        );
+//
+//        BigDecimal expense =
+//                transactions.stream()
+//                        .filter(t ->
+//                                t.getType()
+//                                        == TransactionType.EXPENSE
+//                        )
+//                        .map(Transaction::getAmount)
+//                        .reduce(
+//                                BigDecimal.ZERO,
+//                                BigDecimal::add
+//                        );
+//
+//        BigDecimal monthlyBalance =
+//                income.subtract(expense);
+//
+//        BigDecimal totalIncome =
+//                transactionRepository
+//                        .getTotalAmountByType(
+//                                user,
+//                                TransactionType.INCOME
+//                        );
+//
+//        BigDecimal totalExpense =
+//                transactionRepository
+//                        .getTotalAmountByType(
+//                                user,
+//                                TransactionType.EXPENSE
+//                        );
+//
+//        BigDecimal currentBalance =
+//                totalIncome.subtract(
+//                        totalExpense
+//                );
+//
+//        List<TransactionResponseDTO>
+//                recentTransactions =
+//                transactions.stream()
+//                        .limit(10)
+//                        .map(transactionMapper::mapToResponse)
+//                        .toList();
+//
+//        return BudgetHomeResponseDTO
+//                .builder()
+//                .currentBalance(currentBalance)
+//                .monthlyBalance(monthlyBalance)
+//                .income(income)
+//                .expense(expense)
+//                .currency("INR")
+//                .selectedMonth(month)
+//                .recentTransactions(recentTransactions)
+//                .build();
+//    }
 
     // =====================================
     // FILTER TRANSACTIONS

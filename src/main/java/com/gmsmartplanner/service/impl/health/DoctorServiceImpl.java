@@ -5,6 +5,7 @@ import com.gmsmartplanner.dto.request.health.UpdateDoctorRequestDTO;
 import com.gmsmartplanner.dto.response.health.DoctorResponseDTO;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.health.Doctor;
+import com.gmsmartplanner.exception.InvalidRequestException;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.health.DoctorMapper;
 import com.gmsmartplanner.repository.health.DoctorRepository;
@@ -42,18 +43,45 @@ public class DoctorServiceImpl
 
         User user =
                 userHelperService
-                        .getCurrentUser(username);
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // PREVENT USING OWN MOBILE NUMBER
+        // =====================================
+
+        if (
+                dto.getMobileNumber() != null
+                        &&
+                        !dto.getMobileNumber().isBlank()
+                        &&
+                        dto.getMobileNumber()
+                                .equals(
+                                        user.getMobileNumber()
+                                )
+        ) {
+
+            throw new InvalidRequestException(
+                    "You cannot use your own registered mobile number"
+            );
+        }
 
         Doctor doctor =
                 doctorMapper
-                        .createDoctor(dto);
+                        .createDoctor(
+                                dto
+                        );
 
-        doctor.setUser(user);
+        doctor.setUser(
+                user
+        );
 
         Doctor savedDoctor =
-                doctorRepository.save(
-                        doctor
-                );
+                doctorRepository
+                        .save(
+                                doctor
+                        );
 
         return doctorMapper
                 .mapToResponse(
@@ -115,23 +143,51 @@ public class DoctorServiceImpl
 
         User user =
                 userHelperService
-                        .getCurrentUser(username);
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // PREVENT USING OWN MOBILE NUMBER
+        // =====================================
+
+        if (
+                dto.getMobileNumber() != null
+                        &&
+                        !dto.getMobileNumber().isBlank()
+                        &&
+                        dto.getMobileNumber()
+                                .equals(
+                                        user.getMobileNumber()
+                                )
+        ) {
+
+            throw new InvalidRequestException(
+                    "You cannot use your own registered mobile number"
+            );
+        }
 
         Doctor doctor =
                 getDoctorEntity(
+
                         doctorId,
+
                         user
                 );
 
-        doctorMapper.updateDoctor(
-                doctor,
-                dto
-        );
+        doctorMapper
+                .updateDoctor(
+
+                        doctor,
+
+                        dto
+                );
 
         Doctor updatedDoctor =
-                doctorRepository.save(
-                        doctor
-                );
+                doctorRepository
+                        .save(
+                                doctor
+                        );
 
         return doctorMapper
                 .mapToResponse(

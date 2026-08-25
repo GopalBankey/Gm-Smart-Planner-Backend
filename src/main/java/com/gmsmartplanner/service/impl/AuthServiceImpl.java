@@ -1,1064 +1,994 @@
-package com.gmsmartplanner.service.impl;
+        package com.gmsmartplanner.service.impl;
 
-import com.gmsmartplanner.config.JwtService;
-import com.gmsmartplanner.dto.request.*;
-import com.gmsmartplanner.dto.response.LoginResponseDTO;
-import com.gmsmartplanner.entity.RefreshToken;
-import com.gmsmartplanner.entity.User;
-import com.gmsmartplanner.entity.UserAuth;
-import com.gmsmartplanner.enums.LoginType;
-import com.gmsmartplanner.exception.InvalidOtpException;
-import com.gmsmartplanner.exception.InvalidRequestException;
-import com.gmsmartplanner.exception.ResourceNotFoundException;
-import com.gmsmartplanner.mapper.AuthMapper;
-import com.gmsmartplanner.repository.UserAuthRepository;
-import com.gmsmartplanner.repository.UserRepository;
-import com.gmsmartplanner.service.AuthService;
-import com.gmsmartplanner.service.EmailService;
-import com.gmsmartplanner.service.RefreshTokenService;
-import com.gmsmartplanner.service.UserHelperService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+        import com.gmsmartplanner.config.JwtService;
+        import com.gmsmartplanner.dto.request.*;
+        import com.gmsmartplanner.dto.response.LoginResponseDTO;
+        import com.gmsmartplanner.entity.RefreshToken;
+        import com.gmsmartplanner.entity.User;
+        import com.gmsmartplanner.entity.UserAuth;
+        import com.gmsmartplanner.enums.LoginType;
+        import com.gmsmartplanner.exception.InvalidOtpException;
+        import com.gmsmartplanner.exception.InvalidRequestException;
+        import com.gmsmartplanner.exception.ResourceNotFoundException;
+        import com.gmsmartplanner.mapper.AuthMapper;
+        import com.gmsmartplanner.repository.UserAuthRepository;
+        import com.gmsmartplanner.repository.UserRepository;
+        import com.gmsmartplanner.service.AuthService;
+        import com.gmsmartplanner.service.EmailService;
+        import com.gmsmartplanner.service.RefreshTokenService;
+        import com.gmsmartplanner.service.UserHelperService;
+        import lombok.RequiredArgsConstructor;
+        import lombok.extern.slf4j.Slf4j;
+        import org.springframework.stereotype.Service;
+        import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
-import java.util.Optional;
+        import java.security.SecureRandom;
+        import java.time.LocalDateTime;
+        import java.util.Optional;
 
-@Service
-@RequiredArgsConstructor
-@Transactional
-@Slf4j
-public class AuthServiceImpl
-        implements AuthService {
+        @Service
+        @RequiredArgsConstructor
+        @Transactional
+        @Slf4j
+        public class AuthServiceImpl
+                implements AuthService {
 
-    private final UserRepository
-            userRepository;
+            private final UserRepository
+                    userRepository;
 
-    private final UserAuthRepository
-            userAuthRepository;
+            private final UserAuthRepository
+                    userAuthRepository;
 
-    private final JwtService
-            jwtService;
+            private final JwtService
+                    jwtService;
 
-    private final RefreshTokenService
-            refreshTokenService;
+            private final RefreshTokenService
+                    refreshTokenService;
 
-    private final AuthMapper
-            authMapper;
+            private final AuthMapper
+                    authMapper;
 
-    private final EmailService
-            emailService;
+            private final EmailService
+                    emailService;
 
-    private final UserHelperService
-            userHelperService;
+            private final UserHelperService
+                    userHelperService;
 
-    private static final SecureRandom
-            SECURE_RANDOM = new SecureRandom();
+            private static final SecureRandom
+                    SECURE_RANDOM = new SecureRandom();
 
-    // =========================================
-    // MOBILE LOGIN
-    // =========================================
+            // =========================================
+            // MOBILE LOGIN
+            // =========================================
 
-    @Override
-    @Transactional
-    public String initiateMobileAuth(
+            @Override
+            @Transactional
+            public String initiateMobileAuth(
 
-            MobileAuthDTO dto
+                    MobileAuthDTO dto
 
-    ) {
+            ) {
 
-        validateMobileRequest(
-                dto
-        );
+                validateMobileRequest(dto);
 
-        // =====================================
-        // COUNTRY CODE
-        // =====================================
+                String countryCode =
 
-        String countryCode =
+                        dto.getCountryCode() == null
+                                || dto.getCountryCode().isBlank()
 
-                dto.getCountryCode() == null
-                        ||
-                        dto.getCountryCode().isBlank()
+                                ?
 
-                        ?
+                                "+91"
 
-                        "+91"
+                                :
 
-                        :
+                                dto.getCountryCode();
 
-                        dto.getCountryCode();
+                String fullMobile =
 
-        String fullMobile =
+                        countryCode
+                                +
+                                dto.getMobileNumber();
 
-                countryCode
-                        +
-                        dto.getMobileNumber();
+                log.info(
+                        "Initiating mobile login for mobile : {}",
+                        fullMobile
+                );
 
-        log.info(
+                String generatedOtp =
+                        generateOtp();
 
-                "Initiating mobile login for mobile : {}",
+                Optional<User> existingUser =
 
-                fullMobile
-        );
+                        userRepository
+                                .findByMobileNumber(
+                                        dto.getMobileNumber()
+                                );
 
-        String generatedOtp =
-                generateOtp();
+                User user;
 
-        // IMPORTANT
-        // DB SEARCH ONLY MOBILE NUMBER
-        // NOT COUNTRY CODE
+                UserAuth userAuth;
 
-        Optional<User> existingUser =
+                // =====================================
+                // NEW USER
+                // =====================================
 
-                userRepository
+                if (existingUser.isEmpty()) {
 
-                        .findByMobileNumber(
+                    log.info(
+                            "Creating new mobile user : {}",
+                            dto.getMobileNumber()
+                    );
 
-                                dto.getMobileNumber()
+                    user =
+                            authMapper
+                                    .createMobileUser(
+                                            dto.getMobileNumber(),
+                                            countryCode
+                                    );
+
+                    user.setProfileCompleted(false);
+
+                    user =
+                            userRepository.save(user);
+
+                    userAuth =
+                            authMapper
+                                    .createUserAuth(
+                                            user,
+                                            LoginType.MOBILE,
+                                            dto.getFcmToken(),
+                                            null
+                                    );
+
+                    userAuth.setOtpVerified(false);
+
+                    userAuth.setEmailVerified(false);
+
+                    userAuth.setEmailOtpVerified(false);
+
+                } else {
+
+                    // =====================================
+                    // EXISTING USER
+                    // =====================================
+
+                    user =
+                            existingUser.get();
+
+                    userAuth =
+                            getUserAuth(user);
+
+                    authMapper.updateFcmToken(
+                            userAuth,
+                            dto.getFcmToken()
+                    );
+                }
+
+                // =====================================
+                // SAVE OTP
+                // =====================================
+
+                userAuth.setOtp(
+                        generatedOtp
+                );
+
+                userAuth.setOtpCreatedAt(
+                        LocalDateTime.now()
+                );
+
+                userAuth.setOtpVerified(
+                        false
+                );
+
+                userAuthRepository.save(
+                        userAuth
+                );
+
+                // =====================================
+                // SEND SMS
+                // =====================================
+
+                log.info(
+                        "OTP generated for : {}",
+                        fullMobile
+                );
+
+                // TODO sendSms(fullMobile, generatedOtp);
+
+                return generatedOtp;
+            }
+
+            // =========================================
+            // VERIFY MOBILE LOGIN OTP
+            // =========================================
+
+            @Override
+            public LoginResponseDTO verifyMobileOtp(
+
+                    AuthOtpVerifyDTO dto
+
+            ) {
+
+                log.info(
+                        "Verifying mobile login OTP : {}",
+                        dto.getMobileNumber()
+                );
+
+                User user =
+
+                        userRepository
+                                .findByMobileNumber(
+                                        dto.getMobileNumber()
+                                )
+                                .orElseThrow(
+                                        () ->
+                                                new ResourceNotFoundException(
+                                                        "User not found"
+                                                )
+                                );
+
+                UserAuth userAuth =
+                        getUserAuth(user);
+
+                // =====================================
+                // VALIDATE OTP + EXPIRY
+                // =====================================
+
+                validateOtp(
+                        userAuth,
+                        dto.getOtp()
+                );
+
+                // =====================================
+                // MOBILE VERIFIED
+                // =====================================
+
+                userAuth.setLoginType(
+                        LoginType.MOBILE
+                );
+
+                userAuth.setOtpVerified(
+                        true
+                );
+
+                // OTP USED
+                userAuth.setOtp(
+                        null
+                );
+
+                userAuth.setOtpCreatedAt(
+                        null
+                );
+
+                userAuthRepository.save(
+                        userAuth
+                );
+
+                return buildLoginResponse(
+
+                        user,
+
+                        userAuth,
+
+                        "Mobile verified successfully"
+                );
+            }
+            // =========================================
+            // GOOGLE LOGIN
+            // =========================================
+
+            @Override
+            public LoginResponseDTO googleLogin(
+                    GoogleLoginDTO dto
+            ) {
+
+                validateGoogleRequest(dto);
+
+                log.info(
+                        "Google login initiated for email : {}",
+                        dto.getEmail()
+                );
+
+                Optional<User> existingUser =
+                        userRepository.findByEmail(
+                                dto.getEmail()
                         );
 
-        User user;
+                User user;
 
-        UserAuth userAuth;
+                UserAuth userAuth;
 
-        // =====================================
-        // NEW USER
-        // =====================================
+                // =====================================
+                // NEW GOOGLE USER
+                // =====================================
 
-        if (
+                if (existingUser.isEmpty()) {
 
-                existingUser.isEmpty()
-
-        ) {
-
-            log.info(
-
-                    "Creating new mobile user : {}",
-
-                    dto.getMobileNumber()
-            );
-
-            // IMPORTANT
-            // SAVE ONLY 10 DIGIT NUMBER
-
-            user =
-
-                    authMapper
-                            .createMobileUser(
-
-                                    dto.getMobileNumber(),
-                                    countryCode
-                            );
-
-            user.setProfileCompleted(
-                    false
-            );
-
-            user =
-                    userRepository.save(
-                            user
+                    log.info(
+                            "Creating new Google user : {}",
+                            dto.getEmail()
                     );
 
-            userAuth =
+                    user = authMapper.createGoogleUser(
 
-                    authMapper
-                            .createUserAuth(
+                            dto.getEmail(),
 
-                                    user,
+                            dto.getName(),
 
-                                    LoginType.MOBILE,
-
-                                    dto.getFcmToken(),
-
-                                    null
-                            );
-
-            userAuth.setOtpVerified(
-                    false
-            );
-
-            userAuth.setEmailVerified(
-                    false
-            );
-
-            userAuth.setEmailOtpVerified(
-                    false
-            );
-
-            userAuth =
-                    userAuthRepository
-                            .save(
-                                    userAuth
-                            );
-        }
-
-        // =====================================
-        // EXISTING USER
-        // =====================================
-
-        else {
-
-            user =
-                    existingUser.get();
-
-            userAuth =
-                    getUserAuth(
-                            user
+                            dto.getProfileImageUrl()
                     );
 
-            authMapper
-                    .updateFcmToken(
+                    user.setProfileCompleted(false);
+
+                    user = userRepository.save(user);
+
+                    userAuth = authMapper.createUserAuth(
+
+                            user,
+
+                            LoginType.GOOGLE,
+
+                            dto.getFcmToken(),
+
+                            dto.getFirebaseUid()
+                    );
+
+                    // GOOGLE EMAIL VERIFIED
+
+                    userAuth.setEmailVerified(true);
+
+                    // MOBILE VERIFICATION PENDING
+
+                    userAuth.setOtpVerified(false);
+
+                    userAuth.setEmailOtpVerified(false);
+
+                    userAuth = userAuthRepository.save(
+                            userAuth
+                    );
+                }
+
+                // =====================================
+                // EXISTING USER
+                // =====================================
+
+                else {
+
+                    user = existingUser.get();
+
+                    userAuth = getUserAuth(user);
+                    userAuth.setLoginType(LoginType.GOOGLE);
+
+
+                    // LOGIN TYPE VALIDATION
+        //
+        //            if (userAuth.getLoginType()
+        //                    != LoginType.GOOGLE) {
+        //
+        //                throw new InvalidRequestException(
+        //                        "This account is registered with mobile login"
+        //                );
+        //            }
+
+                    // EXTRA SECURITY
+
+                    if (!user.getEmail().equals(
+                            dto.getEmail()
+                    )) {
+
+                        throw new InvalidRequestException(
+                                "Invalid Google account"
+                        );
+                    }
+
+                    // GOOGLE EMAIL ALWAYS VERIFIED
+
+                    if (!userAuth.isEmailVerified()) {
+
+                        userAuth.setEmailVerified(true);
+                    }
+
+                    // UPDATE FCM TOKEN
+
+                    authMapper.updateFcmToken(
 
                             userAuth,
 
                             dto.getFcmToken()
                     );
 
-            userAuthRepository
-                    .save(
+                    userAuthRepository.save(userAuth);
+                }
+
+                return buildLoginResponse(
+
+                        user,
+
+                        userAuth,
+
+                        "Google login successful"
+                );
+            }
+
+
+            // =========================================
+        // RESEND OTP
+        // =========================================
+
+            @Override
+            public String resendOtp(
+
+                    ResendOtpRequestDTO dto
+
+            ) {
+
+                // =====================================
+                // MOBILE OTP
+                // =====================================
+
+                if (
+                        dto.getMobileNumber() != null
+                                &&
+                                !dto.getMobileNumber().isBlank()
+                ) {
+
+                    User user =
+
+                            userRepository
+                                    .findByMobileNumber(
+                                            dto.getMobileNumber()
+                                    )
+                                    .orElseThrow(
+                                            () ->
+                                                    new ResourceNotFoundException(
+                                                            "User not found"
+                                                    )
+                                    );
+
+                    UserAuth userAuth =
+                            getUserAuth(user);
+
+                    if (
+                            userAuth.isOtpVerified()
+                    ) {
+
+                        throw new InvalidRequestException(
+                                "Mobile already verified"
+                        );
+                    }
+
+                    String otp =
+                            generateOtp();
+
+                    userAuth.setOtp(
+                            otp
+                    );
+
+                    // =====================================
+                    // RESET 2-MINUTE TIMER
+                    // =====================================
+
+                    userAuth.setOtpCreatedAt(
+                            LocalDateTime.now()
+                    );
+
+                    userAuth.setOtpVerified(
+                            false
+                    );
+
+                    userAuthRepository.save(
                             userAuth
                     );
-        }
 
-        // =====================================
-        // SAVE OTP
-        // =====================================
+                    log.info(
+                            "Mobile OTP resent for user : {}",
+                            user.getId()
+                    );
 
-        userAuth.setOtp(
-                generatedOtp
-        );
+                    // TODO SEND SMS
 
-        userAuth.setOtpVerified(
-                false
-        );
+                    return otp;
+                }
 
-        userAuthRepository
-                .save(
-                        userAuth
+                // =====================================
+                // EMAIL OTP
+                // =====================================
+
+                if (
+                        dto.getEmail() != null
+                                &&
+                                !dto.getEmail().isBlank()
+                ) {
+
+                    User user =
+
+                            userRepository
+                                    .findByEmail(
+                                            dto.getEmail()
+                                    )
+                                    .orElseThrow(
+                                            () ->
+                                                    new ResourceNotFoundException(
+                                                            "User not found"
+                                                    )
+                                    );
+
+                    UserAuth userAuth =
+                            getUserAuth(user);
+
+                    if (
+                            userAuth.isEmailOtpVerified()
+                    ) {
+
+                        throw new InvalidRequestException(
+                                "Email already verified"
+                        );
+                    }
+
+                    String emailOtp =
+                            generateOtp();
+
+                    userAuth.setEmailOtp(
+                            emailOtp
+                    );
+
+                    // =====================================
+                    // RESET 2-MINUTE TIMER
+                    // =====================================
+
+                    userAuth.setEmailOtpCreatedAt(
+                            LocalDateTime.now()
+                    );
+
+                    userAuth.setEmailOtpVerified(
+                            false
+                    );
+
+                    userAuth.setEmailVerified(
+                            false
+                    );
+
+                    userAuthRepository.save(
+                            userAuth
+                    );
+
+                    log.info(
+                            "Email OTP resent for user : {}",
+                            user.getId()
+                    );
+
+                    emailService.sendOtpEmail(
+
+                            user.getEmail(),
+
+                            emailOtp
+                    );
+
+                    return "Email OTP sent successfully";
+                }
+
+                throw new InvalidRequestException(
+                        "Email or mobile is required"
+                );
+            }
+
+            @Override
+            public LoginResponseDTO refreshToken(
+                    RefreshTokenDTO dto
+            ) {
+
+                log.info(
+                        "Refreshing access token"
                 );
 
-        // =====================================
-        // SEND SMS
-        // =====================================
+                RefreshToken refreshEntity =
+                        refreshTokenService.verify(
+                                dto.getRefreshToken()
+                        );
 
-        log.info(
+                UserAuth auth =
+                        refreshEntity.getUserAuth();
 
-                "OTP generated for : {}",
+                User user =
+                        auth.getUser();
 
-                fullMobile
-        );
+                // UPDATE FCM TOKEN
 
-        // TODO
-        // sendSms(fullMobile, generatedOtp);
+                authMapper.updateFcmToken(
 
-        return generatedOtp;
-    }
+                        auth,
 
-    // =========================================
-    // VERIFY MOBILE LOGIN OTP
-    // =========================================
+                        dto.getFcmToken()
+                );
 
-    @Override
-    public LoginResponseDTO verifyMobileOtp(
-            AuthOtpVerifyDTO dto
-    ) {
+                userAuthRepository.save(auth);
 
-        log.info(
-                "Verifying mobile login OTP : {}",
-                dto.getMobileNumber()
-        );
+                return buildLoginResponse(
 
-        User user =
-                userRepository.findByMobileNumber(
-                                dto.getMobileNumber()
-                        )
+                        user,
+
+                        auth,
+
+                        "Token refreshed successfully"
+                );
+            }
+
+            // =========================================
+            // LOGOUT
+            // =========================================
+
+            @Override
+            public void logout(
+                    String refreshToken
+            ) {
+
+                RefreshToken refreshEntity =
+                        refreshTokenService.verify(
+                                refreshToken
+                        );
+
+                UserAuth auth =
+                        refreshEntity.getUserAuth();
+
+                if (auth.getJwtToken() == null) {
+
+                    throw new InvalidRequestException(
+                            "User already logged out"
+                    );
+                }
+
+                auth.setJwtToken(null);
+
+                userAuthRepository.save(auth);
+
+                refreshTokenService.deleteByAuth(auth);
+
+                log.info(
+                        "Logout successful for user id : {}",
+                        auth.getUser().getId()
+                );
+            }
+
+
+            @Override
+            @Transactional
+            public void deleteAccount(
+
+                    String username
+
+            ) {
+
+                User user =
+
+                        userHelperService
+                                .getCurrentUser(
+                                        username
+                                );
+
+                UserAuth auth =
+
+                        getUserAuth(
+                                user
+                        );
+
+                // =========================
+                // CLEAR TOKENS
+                // =========================
+
+                auth.setJwtToken(
+                        null
+                );
+
+                auth.setFcmToken(
+                        null
+                );
+
+                userAuthRepository
+                        .save(
+                                auth
+                        );
+
+                refreshTokenService
+                        .deleteByAuth(
+                                auth
+                        );
+
+                // =========================
+                // SOFT DELETE
+                // =========================
+
+                user.setName(
+                        "Deleted User"
+                );
+
+                user.setEmail(
+                        null
+                );
+
+                user.setMobileNumber(
+                        null
+                );
+
+                user.setProfileImageUrl(
+                        null
+                );
+
+                user.setProfileCompleted(
+                        false
+                );
+
+                user.setActive(
+                        false
+                );
+
+                userRepository
+                        .save(
+                                user
+                        );
+
+                log.info(
+
+                        "Account deleted successfully : {}",
+
+                        user.getId()
+                );
+            }
+
+            // =========================================
+            // GET USER AUTH
+            // =========================================
+
+            private UserAuth getUserAuth(
+                    User user
+            ) {
+
+                return userAuthRepository
+                        .findByUser(user)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "User not found"
+                                        "User auth not found"
                                 )
                         );
-
-        System.out.println(user.getCountryCode());
-
-        UserAuth userAuth =
-                getUserAuth(user);
-
-        // LOGIN TYPE VALIDATION
-
-//        if (userAuth.getLoginType()
-//                != LoginType.MOBILE) {
-//
-//            throw new InvalidRequestException(
-//                    "Invalid login type"
-//            );
-//        }
-
-        validateOtp(
-                userAuth,
-                dto.getOtp()
-        );
-
-        // =====================================
-        // MOBILE VERIFIED
-        // =====================================
-
-        userAuth.setLoginType(LoginType.MOBILE);
-        userAuth.setOtpVerified(true);
-
-        userAuth.setOtp(null);
-
-        userAuthRepository.save(userAuth);
-
-        return buildLoginResponse(
-
-                user,
-
-                userAuth,
-
-                "Mobile verified successfully"
-        );
-    }
-
-    // =========================================
-    // GOOGLE LOGIN
-    // =========================================
-
-    @Override
-    public LoginResponseDTO googleLogin(
-            GoogleLoginDTO dto
-    ) {
-
-        validateGoogleRequest(dto);
-
-        log.info(
-                "Google login initiated for email : {}",
-                dto.getEmail()
-        );
-
-        Optional<User> existingUser =
-                userRepository.findByEmail(
-                        dto.getEmail()
-                );
-
-        User user;
-
-        UserAuth userAuth;
-
-        // =====================================
-        // NEW GOOGLE USER
-        // =====================================
-
-        if (existingUser.isEmpty()) {
-
-            log.info(
-                    "Creating new Google user : {}",
-                    dto.getEmail()
-            );
-
-            user = authMapper.createGoogleUser(
-
-                    dto.getEmail(),
-
-                    dto.getName(),
-
-                    dto.getProfileImageUrl()
-            );
-
-            user.setProfileCompleted(false);
-
-            user = userRepository.save(user);
-
-            userAuth = authMapper.createUserAuth(
-
-                    user,
-
-                    LoginType.GOOGLE,
-
-                    dto.getFcmToken(),
-
-                    dto.getFirebaseUid()
-            );
-
-            // GOOGLE EMAIL VERIFIED
-
-            userAuth.setEmailVerified(true);
-
-            // MOBILE VERIFICATION PENDING
-
-            userAuth.setOtpVerified(false);
-
-            userAuth.setEmailOtpVerified(false);
-
-            userAuth = userAuthRepository.save(
-                    userAuth
-            );
-        }
-
-        // =====================================
-        // EXISTING USER
-        // =====================================
-
-        else {
-
-            user = existingUser.get();
-
-            userAuth = getUserAuth(user);
-            userAuth.setLoginType(LoginType.GOOGLE);
-
-
-            // LOGIN TYPE VALIDATION
-//
-//            if (userAuth.getLoginType()
-//                    != LoginType.GOOGLE) {
-//
-//                throw new InvalidRequestException(
-//                        "This account is registered with mobile login"
-//                );
-//            }
-
-            // EXTRA SECURITY
-
-            if (!user.getEmail().equals(
-                    dto.getEmail()
-            )) {
-
-                throw new InvalidRequestException(
-                        "Invalid Google account"
-                );
             }
 
-            // GOOGLE EMAIL ALWAYS VERIFIED
+            // =========================================
+            // GENERATE OTP
+            // =========================================
 
-            if (!userAuth.isEmailVerified()) {
+            private String generateOtp() {
 
-                userAuth.setEmailVerified(true);
+                int otp =
+                        SECURE_RANDOM.nextInt(9000)
+                                + 1000;
+
+                return String.valueOf(otp);
             }
 
-            // UPDATE FCM TOKEN
-
-            authMapper.updateFcmToken(
-
-                    userAuth,
-
-                    dto.getFcmToken()
-            );
-
-            userAuthRepository.save(userAuth);
-        }
-
-        return buildLoginResponse(
-
-                user,
-
-                userAuth,
-
-                "Google login successful"
-        );
-    }
-
-
-    // =========================================
-// RESEND OTP
-// =========================================
-
-
-    @Override
-    public String resendOtp(
-
-            ResendOtpRequestDTO dto
-
-    ) {
-
-        // ==========================
-        // MOBILE OTP
-        // ==========================
-
-        if (
-
-                dto.getMobileNumber() != null
-                        &&
-                        !dto.getMobileNumber().isBlank()
-
-        ) {
-
-            User user =
-
-                    userRepository
-
-                            .findByMobileNumber(
-                                    dto.getMobileNumber()
-                            )
-
-                            .orElseThrow(
-
-                                    () ->
-
-                                            new ResourceNotFoundException(
-
-                                                    "User not found"
-                                            )
-                            );
-
-            UserAuth userAuth =
-                    getUserAuth(
-                            user
-                    );
-
-            if (
-
-                    userAuth.isOtpVerified()
-
-            ) {
-
-                throw new InvalidRequestException(
-
-                        "Mobile already verified"
-                );
-            }
-
-            String otp =
-                    generateOtp();
-
-            userAuth.setOtp(
-                    otp
-            );
-
-            userAuth.setOtpVerified(
-                    false
-            );
-
-            userAuthRepository.save(
-                    userAuth
-            );
-
-            log.info(
-                    "Mobile OTP resent"
-            );
-
-            // TODO SMS
-
-            return otp;
-        }
-
-        // ==========================
-        // EMAIL OTP
-        // ==========================
-
-        if (
-
-                dto.getEmail() != null
-                        &&
-                        !dto.getEmail().isBlank()
-
-        ) {
-
-            User user =
-
-                    userRepository
-
-                            .findByEmail(
-                                    dto.getEmail()
-                            )
-
-                            .orElseThrow(
-
-                                    () ->
-
-                                            new ResourceNotFoundException(
-
-                                                    "User not found"
-                                            )
-                            );
-
-            UserAuth userAuth =
-                    getUserAuth(
-                            user
-                    );
-
-            if (
-
-                    userAuth.isEmailOtpVerified()
-
-            ) {
-
-                throw new InvalidRequestException(
-
-                        "Email already verified"
-                );
-            }
-
-            String emailOtp =
-                    generateOtp();
-
-            userAuth.setEmailOtp(
-                    emailOtp
-            );
-
-            userAuth.setEmailOtpVerified(
-                    false
-            );
-
-            userAuth.setEmailVerified(
-                    false
-            );
-
-            userAuthRepository.save(
-                    userAuth
-            );
-
-            log.info(
-                    "Email OTP resent"
-            );
-
-            // SAME AS ONBOARDING
-
-            emailService.sendOtpEmail(
-
-                    user.getEmail(),
-
-                    emailOtp
-            );
-
-            return "Email OTP sent successfully";
-        }
-
-        throw new InvalidRequestException(
-
-                "Email or mobile is required"
-        );
-    }
-//    @Override
-//    public String resendOtp(
-//
-//            ResendOtpRequestDTO dto
-//
-//    ) {
-//
-//        User user =
-//
-//                userRepository
-//
-//                        .findByMobileNumber(
-//                                dto.getMobileNumber()
-//                        )
-//
-//                        .orElseThrow(
-//
-//                                () ->
-//
-//                                        new ResourceNotFoundException(
-//
-//                                                "User not found"
-//                                        )
-//                        );
-//
-//        UserAuth userAuth =
-//                getUserAuth(
-//                        user
-//                );
-//
-//        if (
-//
-//                userAuth.isOtpVerified()
-//
-//        ) {
-//
-//            throw new InvalidRequestException(
-//
-//                    "Mobile already verified"
-//            );
-//        }
-//
-//        String otp =
-//                generateOtp();
-//
-//        userAuth.setOtp(
-//                otp
-//        );
-//
-//        userAuth.setOtpVerified(
-//                false
-//        );
-//
-//        userAuthRepository
-//                .save(
-//                        userAuth
-//                );
-//
-//        log.info(
-//                "OTP resent : {}",
-//                dto.getMobileNumber()
-//        );
-//
-//        // TODO SEND SMS
-//
-//        return otp;
-//    }
-
-    // =========================================
-    // REFRESH TOKEN
-    // =========================================
-
-    @Override
-    public LoginResponseDTO refreshToken(
-            RefreshTokenDTO dto
-    ) {
-
-        log.info(
-                "Refreshing access token"
-        );
-
-        RefreshToken refreshEntity =
-                refreshTokenService.verify(
-                        dto.getRefreshToken()
-                );
-
-        UserAuth auth =
-                refreshEntity.getUserAuth();
-
-        User user =
-                auth.getUser();
-
-        // UPDATE FCM TOKEN
-
-        authMapper.updateFcmToken(
-
-                auth,
-
-                dto.getFcmToken()
-        );
-
-        userAuthRepository.save(auth);
-
-        return buildLoginResponse(
-
-                user,
-
-                auth,
-
-                "Token refreshed successfully"
-        );
-    }
-
-    // =========================================
-    // LOGOUT
-    // =========================================
-
-    @Override
-    public void logout(
-            String refreshToken
-    ) {
-
-        RefreshToken refreshEntity =
-                refreshTokenService.verify(
-                        refreshToken
-                );
-
-        UserAuth auth =
-                refreshEntity.getUserAuth();
-
-        if (auth.getJwtToken() == null) {
-
-            throw new InvalidRequestException(
-                    "User already logged out"
-            );
-        }
-
-        auth.setJwtToken(null);
-
-        userAuthRepository.save(auth);
-
-        refreshTokenService.deleteByAuth(auth);
-
-        log.info(
-                "Logout successful for user id : {}",
-                auth.getUser().getId()
-        );
-    }
-
-
-    @Override
-    @Transactional
-    public void deleteAccount(
-
-            String username
-
-    ) {
-
-        User user =
-
-                userHelperService
-                        .getCurrentUser(
-                                username
-                        );
-
-        UserAuth auth =
-
-                getUserAuth(
-                        user
-                );
-
-        // =========================
-        // CLEAR TOKENS
-        // =========================
-
-        auth.setJwtToken(
-                null
-        );
-
-        auth.setFcmToken(
-                null
-        );
-
-        userAuthRepository
-                .save(
-                        auth
-                );
-
-        refreshTokenService
-                .deleteByAuth(
-                        auth
-                );
-
-        // =========================
-        // SOFT DELETE
-        // =========================
-
-        user.setName(
-                "Deleted User"
-        );
-
-        user.setEmail(
-                null
-        );
-
-        user.setMobileNumber(
-                null
-        );
-
-        user.setProfileImageUrl(
-                null
-        );
-
-        user.setProfileCompleted(
-                false
-        );
-
-        user.setActive(
-                false
-        );
-
-        userRepository
-                .save(
-                        user
-                );
-
-        log.info(
-
-                "Account deleted successfully : {}",
-
-                user.getId()
-        );
-    }
-
-    // =========================================
-    // GET USER AUTH
-    // =========================================
-
-    private UserAuth getUserAuth(
-            User user
-    ) {
-
-        return userAuthRepository
-                .findByUser(user)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User auth not found"
-                        )
-                );
-    }
-
-    // =========================================
-    // GENERATE OTP
-    // =========================================
-
-    private String generateOtp() {
-
-        int otp =
-                SECURE_RANDOM.nextInt(9000)
-                        + 1000;
-
-        return String.valueOf(otp);
-    }
+            // =========================================
+            // VALIDATE OTP
+            // =========================================
 
     // =========================================
     // VALIDATE OTP
     // =========================================
 
-    private void validateOtp(
+            private void validateOtp(
 
-            UserAuth userAuth,
+                    UserAuth userAuth,
 
-            String enteredOtp
+                    String enteredOtp
 
-    ) {
+            ) {
 
-        if (enteredOtp == null
-                || enteredOtp.isBlank()) {
+                // =====================================
+                // OTP REQUIRED
+                // =====================================
 
-            throw new InvalidOtpException(
-                    "OTP is required"
-            );
-        }
+                if (
+                        enteredOtp == null
+                                ||
+                                enteredOtp.isBlank()
+                ) {
 
-        if (userAuth.getOtp() == null
-                || !userAuth.getOtp().equals(
-                enteredOtp
-        )) {
+                    throw new InvalidOtpException(
+                            "OTP is required"
+                    );
+                }
 
-            throw new InvalidOtpException(
-                    "Invalid OTP"
-            );
-        }
-    }
+                // =====================================
+                // OTP NOT AVAILABLE
+                // =====================================
 
-    // =========================================
-    // VALIDATE MOBILE REQUEST
-    // =========================================
+                if (
+                        userAuth.getOtp() == null
+                                ||
+                                userAuth.getOtpCreatedAt() == null
+                ) {
 
-    private void validateMobileRequest(
-            MobileAuthDTO dto
-    ) {
+                    throw new InvalidOtpException(
+                            "OTP has expired. Please request a new OTP."
+                    );
+                }
 
-        if (dto.getMobileNumber() == null
-                || dto.getMobileNumber().isBlank()) {
+                // =====================================
+                // OTP EXPIRY - 2 MINUTES
+                // =====================================
 
-            throw new InvalidRequestException(
-                    "Mobile number is required"
-            );
-        }
+                LocalDateTime expiryTime =
 
-        if (dto.getFcmToken() == null
-                || dto.getFcmToken().isBlank()) {
+                        userAuth
+                                .getOtpCreatedAt()
+                                .plusMinutes(2);
 
-            throw new InvalidRequestException(
-                    "FCM token is required"
-            );
-        }
-    }
+                if (
+                        !LocalDateTime.now()
+                                .isBefore(expiryTime)
+                ) {
 
-    // =========================================
-    // VALIDATE GOOGLE REQUEST
-    // =========================================
+                    userAuth.setOtp(null);
 
-    private void validateGoogleRequest(
-            GoogleLoginDTO dto
-    ) {
+                    userAuth.setOtpCreatedAt(null);
 
-        if (dto.getEmail() == null
-                || dto.getEmail().isBlank()) {
+                    userAuthRepository.save(
+                            userAuth
+                    );
 
-            throw new InvalidRequestException(
-                    "Email is required"
-            );
-        }
+                    throw new InvalidOtpException(
+                            "OTP has expired. Please request a new OTP."
+                    );
+                }
 
-//        if (dto.getName() == null
-//                || dto.getName().isBlank()) {
-//
-//            throw new InvalidRequestException(
-//                    "Name is required"
-//            );
-//        }
+                // =====================================
+                // OTP VALIDATION
+                // =====================================
 
-        if (dto.getFcmToken() == null
-                || dto.getFcmToken().isBlank()) {
+                if (
+                        !userAuth.getOtp()
+                                .equals(enteredOtp)
+                ) {
 
-            throw new InvalidRequestException(
-                    "FCM token is required"
-            );
-        }
+                    throw new InvalidOtpException(
+                            "Invalid OTP"
+                    );
+                }
+            }
 
-        if (dto.getFirebaseUid() == null
-                || dto.getFirebaseUid().isBlank()) {
+            // =========================================
+            // VALIDATE MOBILE REQUEST
+            // =========================================
 
-            throw new InvalidRequestException(
-                    "Firebase UID is required"
-            );
-        }
-    }
+            private void validateMobileRequest(
+                    MobileAuthDTO dto
+            ) {
 
-    // =========================================
-    // BUILD LOGIN RESPONSE
-    // =========================================
+                if (dto.getMobileNumber() == null
+                        || dto.getMobileNumber().isBlank()) {
 
-    private LoginResponseDTO buildLoginResponse(
+                    throw new InvalidRequestException(
+                            "Mobile number is required"
+                    );
+                }
 
-            User user,
+                if (dto.getFcmToken() == null
+                        || dto.getFcmToken().isBlank()) {
 
-            UserAuth userAuth,
+                    throw new InvalidRequestException(
+                            "FCM token is required"
+                    );
+                }
+            }
 
-            String message
+            // =========================================
+            // VALIDATE GOOGLE REQUEST
+            // =========================================
 
-    ) {
+            private void validateGoogleRequest(
+                    GoogleLoginDTO dto
+            ) {
 
-        String identifier =
-                user.getId().toString();
+                if (dto.getEmail() == null
+                        || dto.getEmail().isBlank()) {
 
-        // DELETE OLD TOKENS
+                    throw new InvalidRequestException(
+                            "Email is required"
+                    );
+                }
 
-        refreshTokenService.deleteByAuth(
-                userAuth
-        );
+        //        if (dto.getName() == null
+        //                || dto.getName().isBlank()) {
+        //
+        //            throw new InvalidRequestException(
+        //                    "Name is required"
+        //            );
+        //        }
 
-        // ACCESS TOKEN
+                if (dto.getFcmToken() == null
+                        || dto.getFcmToken().isBlank()) {
 
-        String accessToken =
-                jwtService.generateToken(
-                        identifier
+                    throw new InvalidRequestException(
+                            "FCM token is required"
+                    );
+                }
+
+                if (dto.getFirebaseUid() == null
+                        || dto.getFirebaseUid().isBlank()) {
+
+                    throw new InvalidRequestException(
+                            "Firebase UID is required"
+                    );
+                }
+            }
+
+            // =========================================
+            // BUILD LOGIN RESPONSE
+            // =========================================
+
+            private LoginResponseDTO buildLoginResponse(
+
+                    User user,
+
+                    UserAuth userAuth,
+
+                    String message
+
+            ) {
+
+                String identifier =
+                        user.getId().toString();
+
+                // DELETE OLD TOKENS
+
+                refreshTokenService.deleteByAuth(
+                        userAuth
                 );
 
-        // REFRESH TOKEN
+                // ACCESS TOKEN
 
-        String refreshToken =
-                jwtService.generateRefreshToken(
-                        identifier
+                String accessToken =
+                        jwtService.generateToken(
+                                identifier
+                        );
+
+                // REFRESH TOKEN
+
+                String refreshToken =
+                        jwtService.generateRefreshToken(
+                                identifier
+                        );
+
+                RefreshToken refresh =
+                        refreshTokenService.create(
+
+                                userAuth,
+
+                                refreshToken
+                        );
+
+                userAuth.setJwtToken(
+                        accessToken
                 );
 
-        RefreshToken refresh =
-                refreshTokenService.create(
+                userAuthRepository.save(
+                        userAuth
+                );
+
+                log.info(
+                        "Access token generated for user id : {}",
+                        user.getId()
+                );
+
+                return authMapper.buildLoginResponse(
+
+                        accessToken,
+
+                        refresh,
+
+                        user,
 
                         userAuth,
 
-                        refreshToken
+                        message
                 );
-
-        userAuth.setJwtToken(
-                accessToken
-        );
-
-        userAuthRepository.save(
-                userAuth
-        );
-
-        log.info(
-                "Access token generated for user id : {}",
-                user.getId()
-        );
-
-        return authMapper.buildLoginResponse(
-
-                accessToken,
-
-                refresh,
-
-                user,
-
-                userAuth,
-
-                message
-        );
-    }
-}
+            }
+        }

@@ -9,11 +9,13 @@ import com.gmsmartplanner.entity.todo.TodoShare;
 import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.NotificationType;
 import com.gmsmartplanner.enums.todo.TodoActivityType;
+import com.gmsmartplanner.enums.todo.TodoStatus;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.todo.TodoMapper;
 import com.gmsmartplanner.repository.*;
 import com.gmsmartplanner.repository.todo.TodoActivityRepository;
 import com.gmsmartplanner.repository.todo.TodoChecklistRepository;
+import com.gmsmartplanner.repository.todo.TodoRepository;
 import com.gmsmartplanner.repository.todo.TodoShareRepository;
 import com.gmsmartplanner.service.FirebaseNotificationService;
 import com.gmsmartplanner.service.NotificationHelperService;
@@ -59,9 +61,13 @@ public class SubTaskServiceImpl
     private final UserHelperService
             userHelperService;
 
+    private final TodoRepository
+            todoRepository;
+
     // =====================================
     // COMPLETE SUB TASK
     // =====================================
+
     @Override
     public SubTaskResponseDTO completeSubTask(
 
@@ -72,18 +78,27 @@ public class SubTaskServiceImpl
     ) {
 
         User user =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
 
         TodoChecklist checklist =
-                getSubTask(subTaskId);
+                getSubTask(
+                        subTaskId
+                );
+
+        Todo todo =
+                checklist.getTodo();
 
         validateTodoAccess(
-                checklist.getTodo(),
+                todo,
                 user
         );
+
+        // =====================================
+        // TOGGLE SUB TASK STATUS
+        // =====================================
 
         checklist.setCompleted(
                 !checklist.isCompleted()
@@ -101,9 +116,58 @@ public class SubTaskServiceImpl
                         checklist
                 );
 
+        // =====================================
+        // UPDATE PARENT TODO STATUS
+        // =====================================
+
+        boolean allCompleted =
+                todoChecklistRepository
+                        .findAllByTodoAndDeletedFalseOrderByDisplayOrderAsc(
+                                todo
+                        )
+                        .stream()
+                        .allMatch(TodoChecklist::isCompleted);
+
+        if (allCompleted) {
+
+            todo.setCompleted(
+                    true
+            );
+
+            todo.setCompletedAt(
+                    LocalDateTime.now()
+            );
+
+            todo.setStatus(
+                    TodoStatus.COMPLETED
+            );
+
+        } else {
+
+            todo.setCompleted(
+                    false
+            );
+
+            todo.setCompletedAt(
+                    null
+            );
+
+            todo.setStatus(
+                    TodoStatus.PENDING
+            );
+        }
+
+        todoRepository.save(
+                todo
+        );
+
+        // =====================================
+        // CREATE ACTIVITY
+        // =====================================
+
         createActivity(
 
-                checklist.getTodo(),
+                todo,
 
                 user,
 
@@ -115,12 +179,12 @@ public class SubTaskServiceImpl
         );
 
         // =====================================
-        // SEND NOTIFICATION TO SHARED USERS
+        // SEND NOTIFICATION
         // =====================================
 
         sendNotificationToSharedUsers(
 
-                checklist.getTodo(),
+                todo,
 
                 user,
 
@@ -140,10 +204,6 @@ public class SubTaskServiceImpl
                         updatedChecklist
                 );
     }
-
-    // =====================================
-    // SEND NOTIFICATION TO SHARED USERS
-    // =====================================
 
     private void sendNotificationToSharedUsers(
 
@@ -237,101 +297,6 @@ public class SubTaskServiceImpl
             }
         }
     }
-//    private void sendNotificationToSharedUsers(
-//
-//            Todo todo,
-//
-//            User actionUser,
-//
-//            String title,
-//
-//            String message,
-//
-//            NotificationType type
-//
-//    ) {
-//
-//        List<TodoShare> sharedUsers =
-//                todoShareRepository
-//                        .findAllByTodoAndActiveTrue(todo);
-//
-//        for (TodoShare share : sharedUsers) {
-//
-//            User sharedUser =
-//                    share.getSharedWithUser();
-//
-//            // =====================================
-//            // PREVENT SELF NOTIFICATION
-//            // =====================================
-//
-//            if (sharedUser.getId()
-//                    .equals(actionUser.getId())) {
-//
-//                continue;
-//            }
-//
-//            // =====================================
-//            // SAVE DB NOTIFICATION
-//            // =====================================
-//
-//            notificationHelperService
-//                    .createNotification(
-//
-//                            sharedUser,
-//
-//                            todo,
-//
-//                            title,
-//
-//                            message,
-//
-//                            type
-//                    );
-//
-//            // =====================================
-//            // SEND PUSH NOTIFICATION
-//            // =====================================
-//
-//            UserAuth auth =
-//                    userAuthRepository
-//                            .findByUser(sharedUser)
-//                            .orElse(null);
-//
-//            if (auth == null
-//                    || auth.getFcmToken() == null
-//                    || auth.getFcmToken().isBlank()) {
-//
-//                continue;
-//            }
-//
-//            try {
-//
-//                firebaseNotificationService
-//                        .sendNotification(
-//
-//                                auth.getFcmToken(),
-//
-//                                title,
-//
-//                                message,
-//
-//                                todo.getId(),
-//
-//                                type
-//                        );
-//
-//            } catch (Exception e) {
-//
-//                // =====================================
-//                // INVALID TOKEN HANDLING
-//                // =====================================
-//
-//                auth.setFcmToken(null);
-//
-//                userAuthRepository.save(auth);
-//            }
-//        }
-//    }
 
     // =====================================
     // GET SUB TASK
@@ -415,6 +380,7 @@ public class SubTaskServiceImpl
     // =====================================
 // REOPEN SUB TASK
 // =====================================
+
     @Override
     public SubTaskResponseDTO reopenSubTask(
 
@@ -435,9 +401,12 @@ public class SubTaskServiceImpl
                         subTaskId
                 );
 
+        Todo todo =
+                checklist.getTodo();
+
         validateTodoAccess(
 
-                checklist.getTodo(),
+                todo,
 
                 user
         );
@@ -448,6 +417,10 @@ public class SubTaskServiceImpl
                     "Sub task already open"
             );
         }
+
+        // =====================================
+        // REOPEN SUB TASK
+        // =====================================
 
         checklist.setCompleted(
                 false
@@ -463,9 +436,33 @@ public class SubTaskServiceImpl
                                 checklist
                         );
 
+        // =====================================
+        // REOPEN PARENT TODO
+        // =====================================
+
+        todo.setCompleted(
+                false
+        );
+
+        todo.setCompletedAt(
+                null
+        );
+
+        todo.setStatus(
+                TodoStatus.PENDING
+        );
+
+        todoRepository.save(
+                todo
+        );
+
+        // =====================================
+        // CREATE ACTIVITY
+        // =====================================
+
         createActivity(
 
-                checklist.getTodo(),
+                todo,
 
                 user,
 
@@ -474,9 +471,13 @@ public class SubTaskServiceImpl
                 "Sub task reopened"
         );
 
+        // =====================================
+        // SEND NOTIFICATION
+        // =====================================
+
         sendNotificationToSharedUsers(
 
-                checklist.getTodo(),
+                todo,
 
                 user,
 
@@ -494,4 +495,84 @@ public class SubTaskServiceImpl
                         updated
                 );
     }
+
+//    @Override
+//    public SubTaskResponseDTO reopenSubTask(
+//
+//            String username,
+//
+//            Long subTaskId
+//
+//    ) {
+//
+//        User user =
+//                userHelperService
+//                        .getCurrentUser(
+//                                username
+//                        );
+//
+//        TodoChecklist checklist =
+//                getSubTask(
+//                        subTaskId
+//                );
+//
+//        validateTodoAccess(
+//
+//                checklist.getTodo(),
+//
+//                user
+//        );
+//
+//        if (!checklist.isCompleted()) {
+//
+//            throw new ResourceNotFoundException(
+//                    "Sub task already open"
+//            );
+//        }
+//
+//        checklist.setCompleted(
+//                false
+//        );
+//
+//        checklist.setCompletedAt(
+//                null
+//        );
+//
+//        TodoChecklist updated =
+//                todoChecklistRepository
+//                        .save(
+//                                checklist
+//                        );
+//
+//        createActivity(
+//
+//                checklist.getTodo(),
+//
+//                user,
+//
+//                TodoActivityType.UPDATED,
+//
+//                "Sub task reopened"
+//        );
+//
+//        sendNotificationToSharedUsers(
+//
+//                checklist.getTodo(),
+//
+//                user,
+//
+//                "Sub Task Reopened",
+//
+//                user.getName()
+//                        + " reopened sub task : "
+//                        + checklist.getTitle(),
+//
+//                NotificationType.SUBTASK
+//        );
+//
+//        return todoMapper
+//                .mapToSubTaskResponse(
+//                        updated
+//                );
+//    }
 }

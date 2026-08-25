@@ -2,6 +2,7 @@ package com.gmsmartplanner.entity.budget;
 
 import com.gmsmartplanner.entity.BaseEntity;
 import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.entity.emi.EmiCategory;
 import com.gmsmartplanner.enums.budget.CreditCardType;
 import com.gmsmartplanner.enums.budget.EmiType;
 import jakarta.persistence.*;
@@ -40,8 +41,7 @@ public class Emi
 
     @Id
     @GeneratedValue(
-            strategy =
-                    GenerationType.IDENTITY
+            strategy = GenerationType.IDENTITY
     )
     private Long id;
 
@@ -49,10 +49,7 @@ public class Emi
     // USER
     // =====================================
 
-    @ManyToOne(
-            fetch =
-                    FetchType.LAZY
-    )
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "user_id",
             nullable = false
@@ -63,23 +60,24 @@ public class Emi
     // CATEGORY
     // =====================================
 
-    @ManyToOne(
-            fetch =
-                    FetchType.LAZY
-    )
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "category_id",
             nullable = false
     )
-    private com.gmsmartplanner.entity.emi.EmiCategory category;
+    private EmiCategory category;
 
     // =====================================
-    // EMI TYPE
+    // EMI DETAILS
     // =====================================
 
-    @Enumerated(
-            EnumType.STRING
+    @Column(
+            name = "emi_name",
+            nullable = false
     )
+    private String emiName;
+
+    @Enumerated(EnumType.STRING)
     @Column(
             name = "emi_type",
             nullable = false
@@ -108,27 +106,18 @@ public class Emi
     // CREDIT CARD DETAILS
     // =====================================
 
-    @Column(
-            name = "credit_card_number"
-    )
+    @Column(name = "credit_card_number")
     private String creditCardNumber;
 
-    @Column(
-            name = "card_holder_name"
-    )
+    @Column(name = "card_holder_name")
     private String cardHolderName;
 
-    @Enumerated(
-            EnumType.STRING
-    )
-    @Column(
-            name = "credit_card_type"
-    )
-    private CreditCardType
-            creditCardType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "credit_card_type")
+    private CreditCardType creditCardType;
 
     // =====================================
-    // EMI DETAILS
+    // PAYMENT DETAILS
     // =====================================
 
     @Column(
@@ -149,14 +138,7 @@ public class Emi
             name = "paid_installments",
             nullable = false
     )
-    private Integer paidInstallments =
-            0;
-
-    @Column(
-            name = "duration_months",
-            nullable = false
-    )
-    private Integer durationMonths;
+    private Integer paidInstallments = 0;
 
     @Column(
             name = "emi_due_date",
@@ -172,6 +154,5 @@ public class Emi
             name = "is_active",
             nullable = false
     )
-    private boolean active =
-            true;
+    private boolean active = true;
 }

@@ -16,12 +16,14 @@ public class CreateReportRequestDTO {
     @NotBlank
     private String reportName;
 
+    @NotBlank
     private String labName;
 
     private Long doctorId;
 
     private String countryCode;
 
+    @NotBlank
     private String labMobileNumber;
 
     private String labAddress;

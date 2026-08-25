@@ -2,18 +2,23 @@ package com.gmsmartplanner.service.impl.budget;
 
 import com.gmsmartplanner.dto.request.budget.CreateEmiRequestDTO;
 import com.gmsmartplanner.dto.request.budget.UpdateEmiRequestDTO;
+import com.gmsmartplanner.dto.response.budget.EmiPaymentHistoryResponseDTO;
 import com.gmsmartplanner.dto.response.budget.EmiResponseDTO;
 import com.gmsmartplanner.entity.Reminder;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.budget.Emi;
+import com.gmsmartplanner.entity.budget.EmiPaymentHistory;
 import com.gmsmartplanner.enums.NotificationReferenceType;
+import com.gmsmartplanner.enums.budget.EmiPaymentStatus;
 import com.gmsmartplanner.enums.budget.RecurringType;
 import com.gmsmartplanner.enums.todo.ReminderNotificationType;
+import com.gmsmartplanner.exception.InvalidRequestException;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.budget.EmiMapper;
 import com.gmsmartplanner.entity.emi.EmiCategory ;
 import com.gmsmartplanner.repository.ReminderRepository;
 import com.gmsmartplanner.repository.budget.EmiCategoryRepository;
+import com.gmsmartplanner.repository.budget.EmiPaymentHistoryRepository;
 import com.gmsmartplanner.repository.budget.EmiRepository;
 import com.gmsmartplanner.service.UserHelperService;
 import com.gmsmartplanner.service.budget.EmiService;
@@ -21,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -44,6 +50,9 @@ public class EmiServiceImpl
 
     private final ReminderRepository
             reminderRepository;
+
+    private final EmiPaymentHistoryRepository
+            emiPaymentHistoryRepository;
 
     // =====================================
     // CREATE EMI
@@ -336,78 +345,46 @@ public class EmiServiceImpl
                 );
     }
 
+// =====================================
+// CREATE EMI REMINDERS
+// =====================================
+
     private void createEmiReminder(
 
             Emi emi
 
-    ) {
+    )
+    {
 
-        LocalDateTime reminderTime =
+        LocalDate dueDate =
+                emi.getEmiDueDate();
 
-                emi.getEmiDueDate()
-                        .atTime(
-                                9,
-                                0
-                        );
+        // =====================================
+        // 2 DAYS BEFORE
+        // =====================================
 
-        if (
-
-                reminderTime.isBefore(
-                        LocalDateTime.now()
-                )
-
-        ) {
-
-            return;
-        }
-
-        Reminder reminder =
-                new Reminder();
-
-        reminder.setUser(
-                emi.getUser()
+        createSingleEmiReminder(
+                emi,
+                dueDate.minusDays(2)
         );
 
-        reminder.setReferenceId(
-                emi.getId()
+        // =====================================
+        // 1 DAY BEFORE
+        // =====================================
+
+        createSingleEmiReminder(
+                emi,
+                dueDate.minusDays(1)
         );
 
-        reminder.setReferenceType(
+        // =====================================
+        // DUE DATE
+        // =====================================
 
-                NotificationReferenceType
-                        .EMI
+        createSingleEmiReminder(
+                emi,
+                dueDate
         );
-
-        reminder.setReminderTime(
-                reminderTime
-        );
-
-        reminder.setNotificationType(
-
-                ReminderNotificationType
-                        .NORMAL
-        );
-
-        reminder.setRecurring(
-                true
-        );
-
-        reminder.setRecurringType(
-                RecurringType.MONTHLY
-        );
-
-        reminder.setSent(
-                false
-        );
-
-        reminder.setActive(
-                true
-        );
-
-        reminderRepository
-                .save(
-                        reminder
-                );
     }
 
 
@@ -426,6 +403,329 @@ public class EmiServiceImpl
                         NotificationReferenceType
                                 .EMI
                 );
+    }
+
+
+    // =====================================
+// PAY EMI
+// =====================================
+
+    @Override
+    public void payEmi(
+
+            String username,
+
+            Long emiId
+
+    ) {
+
+        Emi emi =
+
+                getEmiEntity(
+
+                        username,
+
+                        emiId
+                );
+
+        // =====================================
+        // EMI COMPLETED
+        // =====================================
+
+        if (
+
+                emi.getPaidInstallments()
+
+                        >=
+
+                        emi.getTotalInstallments()
+
+        ) {
+
+            throw new InvalidRequestException(
+
+                    "All EMI installments have already been paid."
+            );
+        }
+
+        LocalDate today =
+                LocalDate.now();
+
+        Integer month =
+                today.getMonthValue();
+
+        Integer year =
+                today.getYear();
+
+        // =====================================
+        // ALREADY PAID
+        // =====================================
+
+        boolean alreadyPaid =
+
+                emiPaymentHistoryRepository
+
+                        .findByEmiAndPaymentMonthAndPaymentYear(
+
+                                emi,
+
+                                month,
+
+                                year
+                        )
+
+                        .isPresent();
+
+        if (
+
+                alreadyPaid
+
+        ) {
+
+            throw new InvalidRequestException(
+
+                    "EMI already paid for this month."
+            );
+        }
+
+        // =====================================
+        // SAVE PAYMENT HISTORY
+        // =====================================
+
+        EmiPaymentHistory history =
+                new EmiPaymentHistory();
+
+        history.setUser(
+                emi.getUser()
+        );
+
+        history.setEmi(
+                emi
+        );
+
+        history.setPaymentDate(
+                today
+        );
+
+        history.setPaymentMonth(
+                month
+        );
+
+        history.setPaymentYear(
+                year
+        );
+
+        history.setStatus(
+                EmiPaymentStatus.PAID
+        );
+
+        emiPaymentHistoryRepository.save(
+                history
+        );
+
+        // =====================================
+        // UPDATE EMI
+        // =====================================
+
+        emi.setPaidInstallments(
+
+                emi.getPaidInstallments() + 1
+        );
+
+        // =====================================
+        // NEXT EMI DATE
+        // =====================================
+
+        if (
+
+                emi.getPaidInstallments()
+
+                        <
+
+                        emi.getTotalInstallments()
+
+        ) {
+
+            emi.setEmiDueDate(
+
+                    emi.getEmiDueDate()
+                            .plusMonths(1)
+            );
+        }
+
+        emiRepository.save(
+                emi
+        );
+
+        // =====================================
+        // UPDATE REMINDER
+        // =====================================
+
+        deleteEmiReminder(
+                emi.getId()
+        );
+
+        if (
+
+                emi.getPaidInstallments()
+
+                        <
+
+                        emi.getTotalInstallments()
+
+        ) {
+
+            createEmiReminder(
+                    emi
+            );
+        }
+    }
+
+    // =====================================
+// EMI PAYMENT HISTORY
+// =====================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmiPaymentHistoryResponseDTO>
+    getPaymentHistory(
+
+            String username,
+
+            Long emiId
+
+    ) {
+
+        Emi emi =
+
+                getEmiEntity(
+
+                        username,
+
+                        emiId
+                );
+
+        return emiPaymentHistoryRepository
+
+                .findAllByEmiOrderByPaymentDateDesc(
+                        emi
+                )
+
+                .stream()
+
+                .map(history ->
+
+                        EmiPaymentHistoryResponseDTO
+
+                                .builder()
+
+                                .id(
+                                        history.getId()
+                                )
+
+                                .emiId(
+                                        emi.getId()
+                                )
+
+                                .emiName(
+                                        emi.getEmiName()
+                                )
+
+                                .paymentDate(
+                                        history.getPaymentDate()
+                                )
+
+                                .paymentMonth(
+                                        history.getPaymentMonth()
+                                )
+
+                                .paymentYear(
+                                        history.getPaymentYear()
+                                )
+
+                                .status(
+                                        history.getStatus()
+                                )
+
+                                .build()
+
+                )
+
+                .toList();
+    }
+
+    // =====================================
+// CREATE SINGLE EMI REMINDER
+// =====================================
+
+    private void createSingleEmiReminder(
+
+            Emi emi,
+
+            LocalDate reminderDate
+
+    ) {
+
+        LocalDateTime reminderTime =
+
+                reminderDate.atTime(
+                        9,
+                        0
+                );
+
+        // Do not create a reminder which
+        // is already in the past.
+        if (
+                reminderTime.isBefore(
+                        LocalDateTime.now()
+                )
+        ) {
+
+            return;
+        }
+
+        Reminder reminder =
+                new Reminder();
+
+        reminder.setUser(
+                emi.getUser()
+        );
+
+        reminder.setReferenceId(
+                emi.getId()
+        );
+
+        reminder.setReferenceType(
+                NotificationReferenceType.EMI
+        );
+
+        reminder.setReminderTime(
+                reminderTime
+        );
+
+        reminder.setNotificationType(
+                ReminderNotificationType.NORMAL
+        );
+
+        reminder.setRecurring(
+                true
+        );
+
+        reminder.setRecurringType(
+                RecurringType.MONTHLY
+        );
+
+        reminder.setSent(
+                false
+        );
+
+        reminder.setActive(
+                true
+        );
+
+        reminderRepository.save(
+                reminder
+        );
     }
 
 }

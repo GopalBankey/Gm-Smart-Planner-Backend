@@ -5,6 +5,7 @@ import com.gmsmartplanner.dto.request.health.UpdateFamilyMemberRequestDTO;
 import com.gmsmartplanner.dto.response.health.FamilyMemberResponseDTO;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.health.FamilyMember;
+import com.gmsmartplanner.exception.InvalidRequestException;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.health.FamilyMemberMapper;
 import com.gmsmartplanner.repository.health.FamilyMemberRepository;
@@ -54,6 +55,26 @@ public class FamilyMemberServiceImpl
                                 username
                         );
 
+        // =====================================
+        // PREVENT USING OWN MOBILE NUMBER
+        // =====================================
+
+        if (
+                dto.getMobileNumber() != null
+                        &&
+                        !dto.getMobileNumber().isBlank()
+                        &&
+                        dto.getMobileNumber()
+                                .equals(
+                                        user.getMobileNumber()
+                                )
+        ) {
+
+            throw new InvalidRequestException(
+                    "You cannot use your own registered mobile number"
+            );
+        }
+
         FamilyMember member =
                 familyMemberMapper
                         .createFamilyMember(
@@ -64,8 +85,11 @@ public class FamilyMemberServiceImpl
                 user
         );
 
-        if (dto.getImage() != null
-                && !dto.getImage().isEmpty()) {
+        if (
+                dto.getImage() != null
+                        &&
+                        !dto.getImage().isEmpty()
+        ) {
 
             member.setProfileImage(
 
@@ -161,6 +185,32 @@ public class FamilyMemberServiceImpl
 
     ) {
 
+        User user =
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // PREVENT USING OWN MOBILE NUMBER
+        // =====================================
+
+        if (
+                dto.getMobileNumber() != null
+                        &&
+                        !dto.getMobileNumber().isBlank()
+                        &&
+                        dto.getMobileNumber()
+                                .equals(
+                                        user.getMobileNumber()
+                                )
+        ) {
+
+            throw new InvalidRequestException(
+                    "You cannot use your own registered mobile number"
+            );
+        }
+
         FamilyMember member =
                 getMember(
 
@@ -177,8 +227,11 @@ public class FamilyMemberServiceImpl
                         dto
                 );
 
-        if (dto.getImage() != null
-                && !dto.getImage().isEmpty()) {
+        if (
+                dto.getImage() != null
+                        &&
+                        !dto.getImage().isEmpty()
+        ) {
 
             member.setProfileImage(
 

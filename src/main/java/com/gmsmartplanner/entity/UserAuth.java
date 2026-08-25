@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(
         name = "user_auth",
@@ -52,6 +54,11 @@ public class UserAuth extends BaseEntity {
     private String otp;
 
     @Column(
+            name = "otp_created_at"
+    )
+    private LocalDateTime otpCreatedAt;
+
+    @Column(
             nullable = false,
             name = "otp_verified"
     )
@@ -74,9 +81,6 @@ public class UserAuth extends BaseEntity {
     )
     private LoginType loginType;
 
-
-
-
     // =====================================
     // EMAIL VERIFICATION
     // =====================================
@@ -92,6 +96,11 @@ public class UserAuth extends BaseEntity {
             name = "email_otp"
     )
     private String emailOtp;
+
+    @Column(
+            name = "email_otp_created_at"
+    )
+    private LocalDateTime emailOtpCreatedAt;
 
     @Column(
             nullable = false,

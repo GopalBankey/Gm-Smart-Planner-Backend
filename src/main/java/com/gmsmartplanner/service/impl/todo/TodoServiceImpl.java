@@ -188,6 +188,10 @@ public class TodoServiceImpl
                 todo,
                 dto.getSubTasks()
         );
+        updateSharedUsers(
+                todo,
+                dto.getSharedUserIds()
+        );
 
         Todo updatedTodo =
                 todoRepository.save(todo);
@@ -1522,6 +1526,86 @@ public class TodoServiceImpl
                 .completedTasks(completedTasks)
                 .overdueTasks(overdueTasks)
                 .build();
+    }
+
+    private void updateSharedUsers(
+
+            Todo todo,
+
+            List<Long> sharedUserIds
+
+    ) {
+
+        if (sharedUserIds == null) {
+
+            return;
+        }
+
+        // =====================================
+        // REMOVE OLD SHARES
+        // =====================================
+
+        List<TodoShare> existingShares =
+                todoShareRepository.findAllByTodoAndActiveTrue(todo);
+
+        for (TodoShare share : existingShares) {
+
+            if (!sharedUserIds.contains(
+                    share.getSharedWithUser().getId()
+            )) {
+
+                share.setActive(false);
+
+                todoShareRepository.save(share);
+            }
+        }
+
+        // =====================================
+        // ADD NEW SHARES
+        // =====================================
+
+        for (Long userId : sharedUserIds) {
+
+            if (todo.getOwner().getId().equals(userId)) {
+
+                continue;
+            }
+
+            User sharedUser =
+                    userRepository.findById(userId)
+                            .orElseThrow(() ->
+                                    new ResourceNotFoundException(
+                                            "User not found"
+                                    )
+                            );
+
+            TodoShare share =
+                    todoShareRepository
+                            .findByTodoAndSharedWithUser(
+                                    todo,
+                                    sharedUser
+                            )
+                            .orElse(null);
+
+            if (share == null) {
+
+                share = new TodoShare();
+
+                share.setTodo(todo);
+
+                share.setSharedWithUser(sharedUser);
+
+                share.setCanEdit(true);
+
+                share.setCanComplete(true);
+
+                share.setCanComment(true);
+            }
+
+            share.setActive(true);
+
+            todoShareRepository.save(share);
+        }
     }
 
 }

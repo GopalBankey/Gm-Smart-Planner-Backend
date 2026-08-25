@@ -19,8 +19,10 @@ public class UpdateEmiRequestDTO {
     private Long categoryId;
 
     // =====================================
-    // EMI TYPE
+    // EMI DETAILS
     // =====================================
+
+    private String emiName;
 
     private EmiType type;
 
@@ -43,14 +45,12 @@ public class UpdateEmiRequestDTO {
     private CreditCardType creditCardType;
 
     // =====================================
-    // EMI DETAILS
+    // PAYMENT DETAILS
     // =====================================
 
     private BigDecimal emiAmount;
 
     private Integer totalInstallments;
-
-    private Integer durationMonths;
 
     private LocalDate emiDueDate;
 

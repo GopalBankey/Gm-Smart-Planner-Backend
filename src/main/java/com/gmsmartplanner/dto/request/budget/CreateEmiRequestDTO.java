@@ -2,6 +2,7 @@ package com.gmsmartplanner.dto.request.budget;
 
 import com.gmsmartplanner.enums.budget.CreditCardType;
 import com.gmsmartplanner.enums.budget.EmiType;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,8 +22,11 @@ public class CreateEmiRequestDTO {
     private Long categoryId;
 
     // =====================================
-    // EMI TYPE
+    // EMI DETAILS
     // =====================================
+
+    @NotBlank
+    private String emiName;
 
     @NotNull
     private EmiType type;
@@ -34,7 +38,7 @@ public class CreateEmiRequestDTO {
     @NotNull
     private BigDecimal loanAmount;
 
-    @NotNull
+    @NotBlank
     private String bankName;
 
     // =====================================
@@ -48,7 +52,7 @@ public class CreateEmiRequestDTO {
     private CreditCardType creditCardType;
 
     // =====================================
-    // EMI DETAILS
+    // PAYMENT DETAILS
     // =====================================
 
     @NotNull
@@ -56,9 +60,6 @@ public class CreateEmiRequestDTO {
 
     @NotNull
     private Integer totalInstallments;
-
-    @NotNull
-    private Integer durationMonths;
 
     @NotNull
     private LocalDate emiDueDate;

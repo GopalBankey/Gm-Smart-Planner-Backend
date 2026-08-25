@@ -67,4 +67,11 @@ public interface TodoShareRepository
     long countByTodoAndActiveTrue(
             Todo todo
     );
+
+    Optional<TodoShare> findByTodoAndSharedWithUser(
+
+            Todo todo,
+
+            User sharedWithUser
+    );
 }

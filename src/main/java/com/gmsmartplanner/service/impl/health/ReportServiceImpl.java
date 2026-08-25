@@ -6,6 +6,7 @@ import com.gmsmartplanner.dto.response.health.ReportResponseDTO;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.health.Doctor;
 import com.gmsmartplanner.entity.health.HealthReport;
+import com.gmsmartplanner.exception.InvalidRequestException;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.health.ReportMapper;
 import com.gmsmartplanner.repository.health.DoctorRepository;
@@ -42,6 +43,10 @@ public class ReportServiceImpl
     // CREATE
     // =====================================
 
+// =====================================
+// CREATE
+// =====================================
+
     @Override
     public ReportResponseDTO createReport(
 
@@ -57,8 +62,29 @@ public class ReportServiceImpl
                                 username
                         );
 
-        HealthReport report =
+        // =====================================
+        // PREVENT OWN MOBILE NUMBER
+        // =====================================
 
+        if (
+
+                dto.getLabMobileNumber() != null
+                        &&
+                        !dto.getLabMobileNumber().isBlank()
+                        &&
+                        dto.getLabMobileNumber()
+                                .equals(
+                                        user.getMobileNumber()
+                                )
+
+        ) {
+
+            throw new InvalidRequestException(
+                    "You cannot use your own registered mobile number"
+            );
+        }
+
+        HealthReport report =
                 reportMapper
                         .createReport(
                                 dto
@@ -68,18 +94,16 @@ public class ReportServiceImpl
                 user
         );
 
+        // =====================================
+        // DOCTOR
+        // =====================================
+
         if (
-
-                dto.getDoctorId()
-
-                        != null
-
+                dto.getDoctorId() != null
         ) {
 
             Doctor doctor =
-
                     doctorRepository
-
                             .findByIdAndUserAndActiveTrue(
 
                                     dto.getDoctorId(),
@@ -88,9 +112,7 @@ public class ReportServiceImpl
                             )
 
                             .orElseThrow(
-
                                     () ->
-
                                             new ResourceNotFoundException(
                                                     "Doctor not found"
                                             )
@@ -101,17 +123,14 @@ public class ReportServiceImpl
             );
         }
 
+        // =====================================
+        // FILE
+        // =====================================
+
         if (
-
-                dto.getFile()
-
-                        != null
-
+                dto.getFile() != null
                         &&
-
-                        !dto.getFile()
-                                .isEmpty()
-
+                        !dto.getFile().isEmpty()
         ) {
 
             report.setReportFile(
@@ -204,6 +223,10 @@ public class ReportServiceImpl
     // UPDATE
     // =====================================
 
+// =====================================
+// UPDATE
+// =====================================
+
     @Override
     public ReportResponseDTO updateReport(
 
@@ -216,14 +239,34 @@ public class ReportServiceImpl
     ) {
 
         User user =
-
                 userHelperService
                         .getCurrentUser(
                                 username
                         );
 
-        HealthReport report =
+        // =====================================
+        // PREVENT OWN MOBILE NUMBER
+        // =====================================
 
+        if (
+
+                dto.getLabMobileNumber() != null
+                        &&
+                        !dto.getLabMobileNumber().isBlank()
+                        &&
+                        dto.getLabMobileNumber()
+                                .equals(
+                                        user.getMobileNumber()
+                                )
+
+        ) {
+
+            throw new InvalidRequestException(
+                    "You cannot use your own registered mobile number"
+            );
+        }
+
+        HealthReport report =
                 getReportEntity(
 
                         reportId,
@@ -239,18 +282,16 @@ public class ReportServiceImpl
                         dto
                 );
 
+        // =====================================
+        // DOCTOR
+        // =====================================
+
         if (
-
-                dto.getDoctorId()
-
-                        != null
-
+                dto.getDoctorId() != null
         ) {
 
             Doctor doctor =
-
                     doctorRepository
-
                             .findByIdAndUserAndActiveTrue(
 
                                     dto.getDoctorId(),
@@ -259,9 +300,7 @@ public class ReportServiceImpl
                             )
 
                             .orElseThrow(
-
                                     () ->
-
                                             new ResourceNotFoundException(
                                                     "Doctor not found"
                                             )
@@ -272,17 +311,14 @@ public class ReportServiceImpl
             );
         }
 
+        // =====================================
+        // FILE
+        // =====================================
+
         if (
-
-                dto.getFile()
-
-                        != null
-
+                dto.getFile() != null
                         &&
-
-                        !dto.getFile()
-                                .isEmpty()
-
+                        !dto.getFile().isEmpty()
         ) {
 
             report.setReportFile(

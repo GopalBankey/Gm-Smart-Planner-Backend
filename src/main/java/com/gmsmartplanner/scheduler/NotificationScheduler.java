@@ -4,10 +4,12 @@ import com.gmsmartplanner.entity.AccountAccess;
 import com.gmsmartplanner.entity.Reminder;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.UserAuth;
+import com.gmsmartplanner.entity.budget.Emi;
 import com.gmsmartplanner.entity.health.Appointment;
 import com.gmsmartplanner.enums.AccessModule;
 import com.gmsmartplanner.enums.NotificationReferenceType;
 import com.gmsmartplanner.enums.NotificationType;
+import com.gmsmartplanner.enums.budget.RecurringType;
 import com.gmsmartplanner.enums.health.AppointmentStatus;
 import com.gmsmartplanner.repository.AccountAccessRepository;
 import com.gmsmartplanner.repository.ReminderRepository;
@@ -24,7 +26,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Component
@@ -79,12 +83,15 @@ public class NotificationScheduler {
     // REMINDERS
     // =====================================
 
+    // =====================================
+// REMINDERS
+// =====================================
+
     private void processReminders() {
 
         List<Reminder> reminders =
 
                 reminderRepository
-
                         .findAllByActiveTrueAndSentFalseAndReminderTimeBefore(
 
                                 LocalDateTime.now()
@@ -92,9 +99,7 @@ public class NotificationScheduler {
 
         for (
 
-                Reminder reminder
-
-                :
+                Reminder reminder :
 
                 reminders
 
@@ -102,9 +107,32 @@ public class NotificationScheduler {
 
             try {
 
+                // =====================================
+                // EMI VALIDATION
+                // =====================================
+
+                if (
+                        reminder.getReferenceType()
+                                == NotificationReferenceType.EMI
+                ) {
+
+                    if (!validateEmiReminder(reminder)) {
+
+                        reminder.setActive(false);
+
+                        reminder.setSent(true);
+
+                        reminderRepository.save(reminder);
+
+                        continue;
+                    }
+                }
+                // =====================================
+                // OWNER
+                // =====================================
+
                 User owner =
-                        reminder
-                                .getUser();
+                        reminder.getUser();
 
                 String title =
                         buildTitle(
@@ -142,20 +170,9 @@ public class NotificationScheduler {
                                         null
                                 );
 
-                // =====================
-                // OWNER
-                // =====================
-
-                // OWNER
-// LOCAL TYPES → SKIP SERVER PUSH
-
-// =====================
-// OWNER
-// =====================
-// =====================
-// OWNER
-// ONLY TODO
-// =====================
+                // =====================================
+                // OWNER NOTIFICATION
+                // =====================================
 
                 if (
 
@@ -191,26 +208,21 @@ public class NotificationScheduler {
                     );
                 }
 
+                // =====================================
+                // SHARED USER NOTIFICATION
+                // =====================================
 
                 if (
 
-                        reminder
-                                .getReferenceType()
-
+                        reminder.getReferenceType()
                                 !=
-
-                                NotificationReferenceType
-                                        .TODO
+                                NotificationReferenceType.TODO
 
                                 &&
 
-                                reminder
-                                        .getReferenceType()
-
+                                reminder.getReferenceType()
                                         !=
-
-                                        NotificationReferenceType
-                                                .EXTRA_MEDICINE
+                                        NotificationReferenceType.EXTRA_MEDICINE
 
                                 &&
 
@@ -219,16 +231,13 @@ public class NotificationScheduler {
                                 &&
 
                                 Boolean.TRUE.equals(
-
                                         access.getOtpVerified()
                                 )
 
                                 &&
 
                                 hasAccessPermission(
-
                                         access,
-
                                         reminder
                                 )
 
@@ -237,23 +246,21 @@ public class NotificationScheduler {
                     User member =
                             access.getMember();
 
+                    // =====================================
+                    // MEDICINE / REPORT
+                    // =====================================
+
                     if (
 
                             reminder.getReferenceType()
-
                                     ==
-
-                                    NotificationReferenceType
-                                            .MEDICINE
+                                    NotificationReferenceType.MEDICINE
 
                                     ||
 
                                     reminder.getReferenceType()
-
                                             ==
-
-                                            NotificationReferenceType
-                                                    .REPORT
+                                            NotificationReferenceType.REPORT
 
                     ) {
 
@@ -286,7 +293,6 @@ public class NotificationScheduler {
                                                 .getLastActionBy()
                                                 .getId()
                                                 .equals(
-
                                                         member.getId()
                                                 )
 
@@ -296,14 +302,15 @@ public class NotificationScheduler {
                         }
                     }
 
+                    // =====================================
+                    // APPOINTMENT
+                    // =====================================
+
                     if (
 
                             reminder.getReferenceType()
-
                                     ==
-
-                                    NotificationReferenceType
-                                            .APPOINTMENT
+                                    NotificationReferenceType.APPOINTMENT
 
                     ) {
 
@@ -336,7 +343,6 @@ public class NotificationScheduler {
                                                 .getLastActionBy()
                                                 .getId()
                                                 .equals(
-
                                                         member.getId()
                                                 )
 
@@ -367,22 +373,54 @@ public class NotificationScheduler {
                     );
                 }
 
-
-
-
-                reminder.setSent(
-                        true
-                );
+                // =====================================
+                // UPDATE REMINDER
+                // =====================================
 
                 reminder.setLastSentAt(
-
                         LocalDateTime.now()
                 );
 
-                reminderRepository
-                        .save(
-                                reminder
-                        );
+                // =====================================
+                // EMI MONTHLY RECURRING
+                // =====================================
+
+                if (
+
+                        reminder.getReferenceType()
+                                ==
+                                NotificationReferenceType.EMI
+
+                                &&
+
+                                reminder.getRecurring()
+
+                                &&
+
+                                reminder.getRecurringType()
+                                        ==
+                                        RecurringType.MONTHLY
+
+                ) {
+
+                    moveEmiReminderToNextMonth(
+                            reminder
+                    );
+
+                } else {
+
+                    // =====================================
+                    // NORMAL ONE-TIME REMINDER
+                    // =====================================
+
+                    reminder.setSent(
+                            true
+                    );
+                }
+
+                reminderRepository.save(
+                        reminder
+                );
             }
 
             catch (
@@ -410,9 +448,6 @@ public class NotificationScheduler {
         }
     }
 
-    // =====================================
-    // SEND
-    // =====================================
 
     private void sendNotification(
 
@@ -628,8 +663,11 @@ public class NotificationScheduler {
         };
     }
 
-    private String
-    buildMessage(
+    // =====================================
+// MESSAGE
+// =====================================
+
+    private String buildMessage(
 
             Reminder reminder,
 
@@ -656,10 +694,13 @@ public class NotificationScheduler {
 
             switch (
 
-                    reminder
-                            .getReferenceType()
+                    reminder.getReferenceType()
 
             ) {
+
+                // =====================================
+                // MEDICINE
+                // =====================================
 
                 case MEDICINE -> {
 
@@ -678,9 +719,7 @@ public class NotificationScheduler {
                                     );
 
                     if (
-
                             medicine != null
-
                     ) {
 
                         return prefix
@@ -694,8 +733,11 @@ public class NotificationScheduler {
 
                                 " medicine time";
                     }
-
                 }
+
+                // =====================================
+                // REPORT
+                // =====================================
 
                 case REPORT -> {
 
@@ -714,9 +756,7 @@ public class NotificationScheduler {
                                     );
 
                     if (
-
                             medicine != null
-
                     ) {
 
                         return prefix
@@ -730,8 +770,11 @@ public class NotificationScheduler {
 
                                 " stock is low. Please refill";
                     }
-
                 }
+
+                // =====================================
+                // APPOINTMENT
+                // =====================================
 
                 case APPOINTMENT -> {
 
@@ -750,9 +793,9 @@ public class NotificationScheduler {
                                     );
 
                     if (
-
                             appointment != null
-
+                                    &&
+                                    appointment.getDoctor() != null
                     ) {
 
                         return prefix
@@ -767,8 +810,11 @@ public class NotificationScheduler {
 
                                 " appointment scheduled";
                     }
-
                 }
+
+                // =====================================
+                // TODO
+                // =====================================
 
                 case TODO -> {
 
@@ -787,25 +833,27 @@ public class NotificationScheduler {
                                     );
 
                     if (
-
                             todo != null
-
                     ) {
 
                         return prefix
 
                                 +
 
-                                todo
-                                        .getTitle();
+                                todo.getTitle();
                     }
-
                 }
+
+                // =====================================
+                // EMI
+                // =====================================
+
                 case EMI -> {
 
-                    var emi =
+                    Emi emi =
 
                             emiRepository
+
                                     .findById(
 
                                             reminder
@@ -817,40 +865,117 @@ public class NotificationScheduler {
                                     );
 
                     if (
-
                             emi != null
-
                     ) {
+
+                        LocalDate today =
+                                LocalDate.now();
+
+                        LocalDate dueDate =
+                                emi.getEmiDueDate();
+
+                        long daysRemaining =
+
+                                ChronoUnit.DAYS.between(
+
+                                        today,
+
+                                        dueDate
+                                );
+
+                        if (
+                                daysRemaining == 0
+                        ) {
+
+                            return prefix
+
+                                    +
+
+                                    emi.getEmiName()
+
+                                    +
+
+                                    " EMI payment of ₹"
+
+                                    +
+
+                                    emi.getEmiAmount()
+
+                                    +
+
+                                    " is due today";
+                        }
+
+                        if (
+                                daysRemaining == 1
+                        ) {
+
+                            return prefix
+
+                                    +
+
+                                    emi.getEmiName()
+
+                                    +
+
+                                    " EMI payment of ₹"
+
+                                    +
+
+                                    emi.getEmiAmount()
+
+                                    +
+
+                                    " is due tomorrow";
+                        }
+
+                        if (
+                                daysRemaining == 2
+                        ) {
+
+                            return prefix
+
+                                    +
+
+                                    emi.getEmiName()
+
+                                    +
+
+                                    " EMI payment of ₹"
+
+                                    +
+
+                                    emi.getEmiAmount()
+
+                                    +
+
+                                    " is due in 2 days";
+                        }
 
                         return prefix
 
                                 +
 
-                                emi.getCategory()
-                                        .getName()
+                                emi.getEmiName()
 
                                 +
 
-                                " EMI payment of ₹"
-
-                                +
-
-                                emi.getEmiAmount()
-
-                                +
-
-                                " is due today";
+                                " EMI payment reminder";
                     }
+                }
+
+                default -> {
+                    // No specific message
                 }
             }
 
         }
 
         catch (
-
                 Exception ignored
-
         ) {
+
+            // Keep existing scheduler behavior.
         }
 
         return prefix
@@ -858,10 +983,6 @@ public class NotificationScheduler {
                 "scheduled reminder";
     }
 
-
-    // =====================================
-    // APPOINTMENTS
-    // =====================================
 
     private void processAppointments() {
 
@@ -941,5 +1062,179 @@ public class NotificationScheduler {
                 .saveAll(
                         appointments
                 );
+    }
+
+    // =====================================
+// VALIDATE EMI REMINDER
+// =====================================
+
+// =====================================
+// VALIDATE EMI REMINDER
+// =====================================
+
+// =====================================
+// VALIDATE EMI REMINDER
+// =====================================
+
+    private boolean validateEmiReminder(
+
+            Reminder reminder
+
+    ) {
+
+        Emi emi =
+
+                emiRepository
+
+                        .findById(
+                                reminder.getReferenceId()
+                        )
+
+                        .orElse(
+                                null
+                        );
+
+        // =====================================
+        // EMI DELETED / INACTIVE
+        // =====================================
+
+        if (
+                emi == null
+                        ||
+                        !emi.isActive()
+        ) {
+
+            return false;
+        }
+
+        LocalDate dueDate =
+                emi.getEmiDueDate();
+
+        LocalDate reminderDate =
+                reminder.getReminderTime()
+                        .toLocalDate();
+
+        // =====================================
+        // EXPECTED REMINDER DATES
+        // =====================================
+
+        LocalDate twoDaysBefore =
+                dueDate.minusDays(2);
+
+        LocalDate oneDayBefore =
+                dueDate.minusDays(1);
+
+        // =====================================
+        // VALIDATE REMINDER DATE
+        // =====================================
+
+        return reminderDate.equals(
+                twoDaysBefore
+        )
+
+                ||
+
+                reminderDate.equals(
+                        oneDayBefore
+                )
+
+                ||
+
+                reminderDate.equals(
+                        dueDate
+                );
+    }
+
+    // =====================================
+// MOVE EMI REMINDER TO NEXT MONTH
+// =====================================
+
+    private void moveEmiReminderToNextMonth(
+
+            Reminder reminder
+
+    ) {
+
+        Emi emi =
+
+                emiRepository
+
+                        .findById(
+                                reminder.getReferenceId()
+                        )
+
+                        .orElse(
+                                null
+                        );
+
+        // =====================================
+        // EMI DELETED
+        // =====================================
+
+        if (
+                emi == null
+                        ||
+                        !emi.isActive()
+        ) {
+
+            reminder.setActive(
+                    false
+            );
+
+            reminder.setSent(
+                    true
+            );
+
+            return;
+        }
+
+        LocalDate dueDate =
+                emi.getEmiDueDate();
+
+        LocalDate currentReminderDate =
+                reminder.getReminderTime()
+                        .toLocalDate();
+
+        // =====================================
+        // IDENTIFY REMINDER OFFSET
+        // =====================================
+
+        long offsetDays =
+
+                ChronoUnit.DAYS.between(
+
+                        currentReminderDate,
+
+                        dueDate
+                );
+
+        LocalDate nextDueDate =
+                dueDate.plusMonths(1);
+
+        // =====================================
+        // NEXT REMINDER DATE
+        // =====================================
+
+        LocalDate nextReminderDate =
+
+                nextDueDate.minusDays(
+                        offsetDays
+                );
+
+        reminder.setReminderTime(
+
+                nextReminderDate.atTime(
+                        9,
+                        0
+                )
+        );
+
+        reminder.setSent(
+                false
+        );
+
+        reminder.setActive(
+                true
+        );
     }
 }

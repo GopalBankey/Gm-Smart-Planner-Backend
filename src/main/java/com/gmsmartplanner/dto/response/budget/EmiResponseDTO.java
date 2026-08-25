@@ -24,6 +24,8 @@ public class EmiResponseDTO {
 
     private String categoryIcon;
 
+    private String emiName;
+
     private EmiType type;
 
     // =====================================
@@ -55,8 +57,6 @@ public class EmiResponseDTO {
     private Integer paidInstallments;
 
     private Integer remainingInstallments;
-
-    private Integer durationMonths;
 
     private LocalDate emiDueDate;
 

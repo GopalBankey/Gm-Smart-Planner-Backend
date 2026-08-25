@@ -2,6 +2,7 @@ package com.gmsmartplanner.controller.budget;
 
 import com.gmsmartplanner.dto.request.budget.CreateEmiRequestDTO;
 import com.gmsmartplanner.dto.request.budget.UpdateEmiRequestDTO;
+import com.gmsmartplanner.dto.response.budget.EmiPaymentHistoryResponseDTO;
 import com.gmsmartplanner.dto.response.budget.EmiResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
 import com.gmsmartplanner.service.budget.EmiService;
@@ -278,6 +279,109 @@ public class EmiController {
 
                         .message(
                                 "EMI deleted successfully"
+                        )
+
+                        .build()
+        );
+    }
+
+
+    // =====================================
+// PAY EMI
+// =====================================
+
+    @PostMapping(
+            "/{emiId}/pay"
+    )
+    public ResponseEntity<
+            ApiResponse<Void>
+            >
+    payEmi(
+
+            Authentication authentication,
+
+            @PathVariable
+            Long emiId
+
+    ) {
+
+        String username =
+                authentication.getName();
+
+        emiService
+                .payEmi(
+
+                        username,
+
+                        emiId
+                );
+
+        return ResponseEntity.ok(
+
+                ApiResponse
+                        .<Void>builder()
+
+                        .success(
+                                true
+                        )
+
+                        .message(
+                                "EMI paid successfully."
+                        )
+
+                        .build()
+        );
+    }
+
+// =====================================
+// EMI PAYMENT HISTORY
+// =====================================
+
+    @GetMapping(
+            "/{emiId}/payment-history"
+    )
+    public ResponseEntity<
+            ApiResponse<
+                    List<EmiPaymentHistoryResponseDTO>
+                    >
+            >
+    getPaymentHistory(
+
+            Authentication authentication,
+
+            @PathVariable
+            Long emiId
+
+    ) {
+
+        String username =
+                authentication.getName();
+
+        List<EmiPaymentHistoryResponseDTO> response =
+
+                emiService
+                        .getPaymentHistory(
+
+                                username,
+
+                                emiId
+                        );
+
+        return ResponseEntity.ok(
+
+                ApiResponse
+                        .<List<EmiPaymentHistoryResponseDTO>>builder()
+
+                        .success(
+                                true
+                        )
+
+                        .message(
+                                "EMI payment history fetched successfully."
+                        )
+
+                        .data(
+                                response
                         )
 
                         .build()

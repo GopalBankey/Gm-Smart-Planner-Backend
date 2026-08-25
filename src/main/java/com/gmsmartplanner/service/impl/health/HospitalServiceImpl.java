@@ -5,6 +5,7 @@ import com.gmsmartplanner.dto.request.health.UpdateHospitalRequestDTO;
 import com.gmsmartplanner.dto.response.health.HospitalResponseDTO;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.health.Hospital;
+import com.gmsmartplanner.exception.InvalidRequestException;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.health.HospitalMapper;
 import com.gmsmartplanner.repository.health.HospitalRepository;
@@ -49,6 +50,28 @@ public class HospitalServiceImpl
                         .getCurrentUser(
                                 username
                         );
+
+        // =====================================
+        // PREVENT USING OWN MOBILE NUMBER
+        // =====================================
+
+        if (
+
+                dto.getMobileNumber() != null
+                        &&
+                        !dto.getMobileNumber().isBlank()
+                        &&
+                        dto.getMobileNumber()
+                                .equals(
+                                        user.getMobileNumber()
+                                )
+
+        ) {
+
+            throw new InvalidRequestException(
+                    "You cannot use your own registered mobile number"
+            );
+        }
 
         Hospital hospital =
                 hospitalMapper
@@ -158,6 +181,28 @@ public class HospitalServiceImpl
                         .getCurrentUser(
                                 username
                         );
+
+        // =====================================
+        // PREVENT USING OWN MOBILE NUMBER
+        // =====================================
+
+        if (
+
+                dto.getMobileNumber() != null
+                        &&
+                        !dto.getMobileNumber().isBlank()
+                        &&
+                        dto.getMobileNumber()
+                                .equals(
+                                        user.getMobileNumber()
+                                )
+
+        ) {
+
+            throw new InvalidRequestException(
+                    "You cannot use your own registered mobile number"
+            );
+        }
 
         Hospital hospital =
                 getHospitalEntity(
