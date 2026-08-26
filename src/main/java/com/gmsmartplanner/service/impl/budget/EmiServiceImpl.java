@@ -410,6 +410,14 @@ public class EmiServiceImpl
 // PAY EMI
 // =====================================
 
+// =====================================
+// PAY EMI
+// =====================================
+
+// =====================================
+// PAY EMI
+// =====================================
+
     @Override
     public void payEmi(
 
@@ -448,18 +456,44 @@ public class EmiServiceImpl
             );
         }
 
+        // =====================================
+        // CURRENT EMI DUE DATE
+        // =====================================
+
         LocalDate today =
                 LocalDate.now();
 
-        Integer month =
-                today.getMonthValue();
+        LocalDate dueDate =
+                emi.getEmiDueDate();
 
-        Integer year =
-                today.getYear();
+        // =====================================
+        // EMI NOT DUE YET
+        // =====================================
+
+        if (
+
+                today.isBefore(
+                        dueDate
+                )
+
+        ) {
+
+            throw new InvalidRequestException(
+
+                    "This EMI is not due yet. Payment can be made on or after "
+                            + dueDate
+            );
+        }
 
         // =====================================
         // ALREADY PAID
         // =====================================
+
+        Integer month =
+                dueDate.getMonthValue();
+
+        Integer year =
+                dueDate.getYear();
 
         boolean alreadyPaid =
 
@@ -477,14 +511,12 @@ public class EmiServiceImpl
                         .isPresent();
 
         if (
-
                 alreadyPaid
-
         ) {
 
             throw new InvalidRequestException(
 
-                    "EMI already paid for this month."
+                    "EMI already paid for this installment."
             );
         }
 
@@ -508,11 +540,11 @@ public class EmiServiceImpl
         );
 
         history.setPaymentMonth(
-                month
+                dueDate.getMonthValue()
         );
 
         history.setPaymentYear(
-                year
+                dueDate.getYear()
         );
 
         history.setStatus(
@@ -524,7 +556,7 @@ public class EmiServiceImpl
         );
 
         // =====================================
-        // UPDATE EMI
+        // UPDATE PAID INSTALLMENTS
         // =====================================
 
         emi.setPaidInstallments(
@@ -533,7 +565,7 @@ public class EmiServiceImpl
         );
 
         // =====================================
-        // NEXT EMI DATE
+        // MOVE TO NEXT EMI DATE
         // =====================================
 
         if (
@@ -558,7 +590,7 @@ public class EmiServiceImpl
         );
 
         // =====================================
-        // UPDATE REMINDER
+        // UPDATE REMINDERS
         // =====================================
 
         deleteEmiReminder(
@@ -580,7 +612,6 @@ public class EmiServiceImpl
             );
         }
     }
-
     // =====================================
 // EMI PAYMENT HISTORY
 // =====================================

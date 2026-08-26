@@ -4,6 +4,7 @@ import com.gmsmartplanner.dto.request.EmailOtpVerifyDTO;
 import com.gmsmartplanner.dto.request.MobileOnboardingDTO;
 import com.gmsmartplanner.dto.request.OtpVerifyDTO;
 import com.gmsmartplanner.dto.request.UpdateProfileDTO;
+import com.gmsmartplanner.dto.response.UserResponseDTO;
 import com.gmsmartplanner.entity.User;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -59,5 +60,9 @@ public interface UserService {
             UpdateProfileDTO dto,
 
             MultipartFile imageFile
+    );
+
+    UserResponseDTO getProfileStatus(
+            String username
     );
 }

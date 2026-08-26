@@ -4,6 +4,7 @@ import com.gmsmartplanner.dto.request.EmailOtpVerifyDTO;
 import com.gmsmartplanner.dto.request.MobileOnboardingDTO;
 import com.gmsmartplanner.dto.request.OtpVerifyDTO;
 import com.gmsmartplanner.dto.request.UpdateProfileDTO;
+import com.gmsmartplanner.dto.response.UserResponseDTO;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.UserAuth;
 import com.gmsmartplanner.enums.LoginType;
@@ -845,5 +846,98 @@ public class UserServiceImpl
                         + 1000;
 
         return String.valueOf(otp);
+    }
+
+    // =========================================
+// GET PROFILE STATUS
+// =========================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResponseDTO getProfileStatus(
+
+            String username
+
+    ) {
+
+        User user =
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        UserAuth userAuth =
+                getUserAuth(
+                        user
+                );
+
+        return UserResponseDTO
+                .builder()
+
+                .id(
+                        user.getId()
+                )
+
+                .name(
+                        user.getName()
+                )
+
+                .email(
+                        user.getEmail()
+                )
+
+                .countryCode(
+                        user.getCountryCode()
+                )
+
+                .mobileNumber(
+                        user.getMobileNumber()
+                )
+
+                .profileImageUrl(
+                        user.getProfileImageUrl()
+                )
+
+                .dob(
+                        user.getDob()
+                )
+
+                .age(
+                        user.getAge()
+                )
+
+                .bloodGroup(
+                        user.getBloodGroup()
+                )
+
+                .note(
+                        user.getNote()
+                )
+
+                .profileCompleted(
+                        user.isProfileCompleted()
+                )
+
+                .loginType(
+                        userAuth.getLoginType()
+                )
+
+                .emailVerified(
+                        userAuth.isEmailVerified()
+                )
+
+                .mobileVerified(
+                        userAuth.isOtpVerified()
+                )
+
+                .firebaseUid(
+                        userAuth.getFirebaseUid()
+                )
+
+                .createdAt(
+                        user.getCreatedAt()
+                )
+
+                .build();
     }
 }

@@ -4,6 +4,7 @@ import com.gmsmartplanner.dto.request.EmailOtpVerifyDTO;
 import com.gmsmartplanner.dto.request.MobileOnboardingDTO;
 import com.gmsmartplanner.dto.request.OtpVerifyDTO;
 import com.gmsmartplanner.dto.request.UpdateProfileDTO;
+import com.gmsmartplanner.dto.response.UserResponseDTO;
 import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.payload.ApiResponse;
 import com.gmsmartplanner.service.UserService;
@@ -283,6 +284,49 @@ public class UserController {
                         )
 
                         .data(updatedUser)
+
+                        .build()
+        );
+    }
+
+    // =========================================
+// GET PROFILE STATUS
+// =========================================
+
+    @GetMapping("/profile-status")
+    public ResponseEntity<ApiResponse<UserResponseDTO>>
+    getProfileStatus(
+
+            Authentication authentication
+
+    ) {
+
+        String username =
+                authentication.getName();
+
+        log.info(
+                "Checking profile status for user : {}",
+                username
+        );
+
+        UserResponseDTO response =
+                userService.getProfileStatus(
+                        username
+                );
+
+        return ResponseEntity.ok(
+
+                ApiResponse
+                        .<UserResponseDTO>
+                                builder()
+
+                        .success(true)
+
+                        .message(
+                                "Profile status fetched successfully"
+                        )
+
+                        .data(response)
 
                         .build()
         );
