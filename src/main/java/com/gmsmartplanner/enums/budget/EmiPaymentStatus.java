@@ -6,5 +6,6 @@ public enum EmiPaymentStatus {
 
     PAID,
 
-    MISSED
+    MISSED,
+    UPCOMING
 }

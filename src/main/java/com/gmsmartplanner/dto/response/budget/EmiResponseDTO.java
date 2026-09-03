@@ -1,15 +1,17 @@
 package com.gmsmartplanner.dto.response.budget;
 
 import com.gmsmartplanner.enums.budget.CreditCardType;
+import com.gmsmartplanner.enums.budget.EmiPaymentStatus;
 import com.gmsmartplanner.enums.budget.EmiType;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class EmiResponseDTO {
 
     // =====================================
@@ -59,6 +61,20 @@ public class EmiResponseDTO {
     private Integer remainingInstallments;
 
     private LocalDate emiDueDate;
+
+    // =====================================
+    // CURRENT PAYMENT STATUS
+    // =====================================
+
+    private EmiPaymentStatus currentPaymentStatus;
+
+    private boolean canPay;
+
+    // =====================================
+    // PAYMENT HISTORY
+    // =====================================
+
+    private List<EmiPaymentHistoryResponseDTO> paymentHistory;
 
     // =====================================
     // STATUS
