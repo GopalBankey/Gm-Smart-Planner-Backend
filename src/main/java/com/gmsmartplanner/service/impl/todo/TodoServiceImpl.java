@@ -569,8 +569,11 @@ public class TodoServiceImpl
     // =====================================
     // BUILD TODO RESPONSE
     // =====================================
-    private TodoResponseDTO
-    buildTodoResponse(
+// =====================================
+// BUILD TODO RESPONSE
+// =====================================
+
+    private TodoResponseDTO buildTodoResponse(
             Todo todo
     ) {
 
@@ -579,35 +582,31 @@ public class TodoServiceImpl
                         todo.getOwner()
                 );
 
-        List<SharedUserResponseDTO>
-                sharedUsers =
+        List<SharedUserResponseDTO> sharedUsers =
                 todoShareRepository
                         .findAllByTodoAndActiveTrue(todo)
                         .stream()
+                        .filter(share ->
+                                share.getSharedWithUser() != null
+                                        && share.getSharedWithUser().isActive()
+                        )
                         .map(todoMapper::mapToSharedUserResponse)
                         .toList();
 
-        List<SubTaskResponseDTO>
-                subTasks =
+        List<SubTaskResponseDTO> subTasks =
                 todoChecklistRepository
                         .findAllByTodoAndDeletedFalseOrderByDisplayOrderAsc(todo)
                         .stream()
                         .map(todoMapper::mapToSubTaskResponse)
                         .toList();
 
-        return todoMapper
-                .mapToTodoResponse(
-
-                        todo,
-
-                        ownerAuth,
-
-                        sharedUsers,
-
-                        subTasks
-                );
+        return todoMapper.mapToTodoResponse(
+                todo,
+                ownerAuth,
+                sharedUsers,
+                subTasks
+        );
     }
-
     // =====================================
     // CREATE SUB TASKS
     // =====================================
@@ -774,23 +773,34 @@ public class TodoServiceImpl
     // =====================================
     // SHARE TODO WITH USERS
     // =====================================
+// =====================================
+// SHARE TODO WITH USERS
+// =====================================
+
     private void shareTodoWithUsers(
-
             Todo todo,
-
             List<Long> userIds
-
     ) {
 
         for (Long userId : userIds) {
 
+            // =====================================
+            // ONLY ACTIVE USERS CAN RECEIVE TODO
+            // =====================================
+
             User user =
-                    userRepository.findById(userId)
+                    userRepository
+                            .findById(userId)
+                            .filter(User::isActive)
                             .orElseThrow(() ->
                                     new ResourceNotFoundException(
                                             "User not found"
                                     )
                             );
+
+            // =====================================
+            // PREVENT OWNER SELF-SHARING
+            // =====================================
 
             if (todo.getOwner()
                     .getId()
@@ -799,58 +809,55 @@ public class TodoServiceImpl
                 continue;
             }
 
+            // =====================================
+            // CHECK EXISTING SHARE
+            // =====================================
+
             boolean alreadyShared =
                     todoShareRepository
                             .existsByTodoAndSharedWithUserAndActiveTrue(
-
                                     todo,
-
                                     user
                             );
 
             if (alreadyShared) {
-
                 continue;
             }
 
-            TodoShare share =
-                    new TodoShare();
+            // =====================================
+            // CREATE SHARE
+            // =====================================
+
+            TodoShare share = new TodoShare();
 
             share.setTodo(todo);
-
-            share.setSharedWithUser(
-                    user
-            );
-
+            share.setSharedWithUser(user);
             share.setCanEdit(true);
-
             share.setCanComplete(true);
-
             share.setCanComment(true);
-
             share.setActive(true);
 
-            todoShareRepository.save(
-                    share
-            );
+            todoShareRepository.save(share);
+
+            // =====================================
+            // CREATE NOTIFICATION
+            // =====================================
 
             notificationHelperService
                     .createNotification(
-
                             user,
-
                             todo.getId(),
-
                             NotificationReferenceType.TODO,
-
                             "Task Shared",
-
                             todo.getOwner().getName()
                                     + " shared a task : "
                                     + todo.getTitle(),
-
                             NotificationType.TASK_SHARED
                     );
+
+            // =====================================
+            // SEND FCM NOTIFICATION
+            // =====================================
 
             UserAuth auth =
                     userAuthRepository
@@ -863,17 +870,12 @@ public class TodoServiceImpl
 
                 firebaseNotificationService
                         .sendNotification(
-
                                 auth.getFcmToken(),
-
                                 "Task Shared",
-
                                 todo.getOwner().getName()
                                         + " shared a task : "
                                         + todo.getTitle(),
-
                                 todo.getId(),
-
                                 NotificationType.TASK_SHARED
                         );
             }
@@ -883,85 +885,62 @@ public class TodoServiceImpl
     // =====================================
     // CREATE REMINDER
     // =====================================
+
     private void createReminder(
-
             Todo todo
-
     ) {
 
-        if (
-
-                todo.getTaskDateTime()
-                        == null
-
-        ) {
-
+        if (todo.getTaskDateTime() == null) {
             return;
         }
 
         List<TodoShare> shares =
-
                 todoShareRepository
-                        .findAllByTodoAndActiveTrue(
-                                todo
-                        );
+                        .findAllByTodoAndActiveTrue(todo);
 
-        for (
+        for (TodoShare share : shares) {
 
-                TodoShare share
+            User sharedUser =
+                    share.getSharedWithUser();
 
-                :
+            // =====================================
+            // DO NOT CREATE REMINDER FOR
+            // INACTIVE / DELETED USER
+            // =====================================
 
-                shares
+            if (sharedUser == null
+                    || !sharedUser.isActive()) {
 
-        ) {
+                continue;
+            }
 
-            Reminder reminder =
-                    new Reminder();
+            Reminder reminder = new Reminder();
 
-            reminder.setUser(
-
-                    share.getSharedWithUser()
-            );
+            reminder.setUser(sharedUser);
 
             reminder.setReferenceId(
-
                     todo.getId()
             );
 
             reminder.setReferenceType(
-
-                    NotificationReferenceType
-                            .TODO
+                    NotificationReferenceType.TODO
             );
 
             reminder.setReminderTime(
-
                     todo.getTaskDateTime()
             );
 
             reminder.setNotificationType(
-
-                    ReminderNotificationType
-                            .NORMAL
+                    ReminderNotificationType.NORMAL
             );
 
-            reminder.setSent(
-                    false
-            );
+            reminder.setSent(false);
+            reminder.setActive(true);
+            reminder.setRecurring(false);
 
-            reminder.setActive(
-                    true
+            reminderRepository.save(
+                    reminder
             );
-
-            reminder.setRecurring(
-                    false
-            );
-
-            reminderRepository
-                    .save(
-                            reminder
-                    );
         }
     }
     // =====================================
@@ -1030,62 +1009,82 @@ public class TodoServiceImpl
     // =====================================
 
 
+    // =====================================
+// SEND NOTIFICATION TO SHARED USERS
+// =====================================
+
     private void sendNotificationToSharedUsers(
-
             Todo todo,
-
             User actionUser,
-
             String title,
-
             String message,
-
             NotificationType type
-
     ) {
 
         List<User> receivers =
                 new java.util.ArrayList<>();
 
-        // ADD OWNER
-        receivers.add(
-                todo.getOwner()
-        );
+        // =====================================
+        // ADD ACTIVE OWNER
+        // =====================================
 
-        // ADD SHARED USERS
+        if (todo.getOwner() != null
+                && todo.getOwner().isActive()) {
+
+            receivers.add(
+                    todo.getOwner()
+            );
+        }
+
+        // =====================================
+        // ADD ACTIVE SHARED USERS
+        // =====================================
+
         receivers.addAll(
-
                 todoShareRepository
                         .findAllByTodoAndActiveTrue(todo)
                         .stream()
                         .map(TodoShare::getSharedWithUser)
+                        .filter(user ->
+                                user != null
+                                        && user.isActive()
+                        )
                         .toList()
         );
 
+        // =====================================
+        // SEND NOTIFICATIONS
+        // =====================================
+
         for (User receiver : receivers) {
 
+            // =====================================
             // SKIP ACTION USER
+            // =====================================
+
             if (receiver.getId()
                     .equals(actionUser.getId())) {
 
                 continue;
             }
 
+            // =====================================
+            // DATABASE NOTIFICATION
+            // =====================================
+
             notificationHelperService
                     .createNotification(
-
                             receiver,
-
                             todo.getId(),
-
                             NotificationReferenceType.TODO,
-
                             title,
-
                             message,
-
                             type
                     );
+
+            // =====================================
+            // FCM NOTIFICATION
+            // =====================================
 
             UserAuth auth =
                     userAuthRepository
@@ -1101,105 +1100,15 @@ public class TodoServiceImpl
 
             firebaseNotificationService
                     .sendNotification(
-
                             auth.getFcmToken(),
-
                             title,
-
                             message,
-
                             todo.getId(),
-
                             type
                     );
         }
     }
-//    private void sendNotificationToSharedUsers(
-//
-//            Todo todo,
-//
-//            User actionUser,
-//
-//            String title,
-//
-//            String message,
-//
-//            NotificationType type
-//
-//    ) {
-//
-//        List<TodoShare> sharedUsers =
-//                todoShareRepository
-//                        .findAllByTodoAndActiveTrue(todo);
-//
-//        for (TodoShare share : sharedUsers) {
-//
-//            User sharedUser =
-//                    share.getSharedWithUser();
-//
-//            // PREVENT SELF NOTIFICATION
-//            if (sharedUser.getId()
-//                    .equals(actionUser.getId())) {
-//
-//                continue;
-//            }
-//
-//            notificationHelperService
-//                    .createNotification(
-//
-//                            sharedUser,
-//
-//                            todo,
-//
-//                            title,
-//
-//                            message,
-//
-//                            type
-//                    );
-//
-//            UserAuth auth =
-//                    userAuthRepository
-//                            .findByUser(sharedUser)
-//                            .orElse(null);
-//
-//            if (auth == null
-//                    || auth.getFcmToken() == null
-//                    || auth.getFcmToken().isBlank()) {
-//
-//                continue;
-//            }
-//
-//            try {
-//
-//                firebaseNotificationService
-//                        .sendNotification(
-//
-//                                auth.getFcmToken(),
-//
-//                                title,
-//
-//                                message,
-//
-//                                todo.getId(),
-//
-//                                type
-//                        );
-//
-//            } catch (Exception e) {
-//
-//                // INVALID TOKEN HANDLING
-//                auth.setFcmToken(null);
-//
-//                userAuthRepository.save(auth);
-//
-//                log.error(
-//                        "Invalid FCM token removed for user : {}",
-//                        sharedUser.getId()
-//                );
-//            }
-//        }
-//    }
+
 
     // =====================================
     // VALIDATE ACCESS
@@ -1528,16 +1437,16 @@ public class TodoServiceImpl
                 .build();
     }
 
+// =====================================
+// UPDATE SHARED USERS
+// =====================================
+
     private void updateSharedUsers(
-
             Todo todo,
-
             List<Long> sharedUserIds
-
     ) {
 
         if (sharedUserIds == null) {
-
             return;
         }
 
@@ -1546,7 +1455,8 @@ public class TodoServiceImpl
         // =====================================
 
         List<TodoShare> existingShares =
-                todoShareRepository.findAllByTodoAndActiveTrue(todo);
+                todoShareRepository
+                        .findAllByTodoAndActiveTrue(todo);
 
         for (TodoShare share : existingShares) {
 
@@ -1566,18 +1476,34 @@ public class TodoServiceImpl
 
         for (Long userId : sharedUserIds) {
 
-            if (todo.getOwner().getId().equals(userId)) {
+            // =====================================
+            // PREVENT OWNER SELF-SHARING
+            // =====================================
+
+            if (todo.getOwner()
+                    .getId()
+                    .equals(userId)) {
 
                 continue;
             }
 
+            // =====================================
+            // ONLY ACTIVE USERS CAN BE SHARED WITH
+            // =====================================
+
             User sharedUser =
-                    userRepository.findById(userId)
+                    userRepository
+                            .findById(userId)
+                            .filter(User::isActive)
                             .orElseThrow(() ->
                                     new ResourceNotFoundException(
                                             "User not found"
                                     )
                             );
+
+            // =====================================
+            // FIND EXISTING SHARE
+            // =====================================
 
             TodoShare share =
                     todoShareRepository
@@ -1587,20 +1513,28 @@ public class TodoServiceImpl
                             )
                             .orElse(null);
 
+            // =====================================
+            // CREATE SHARE
+            // =====================================
+
             if (share == null) {
 
                 share = new TodoShare();
 
                 share.setTodo(todo);
 
-                share.setSharedWithUser(sharedUser);
+                share.setSharedWithUser(
+                        sharedUser
+                );
 
                 share.setCanEdit(true);
-
                 share.setCanComplete(true);
-
                 share.setCanComment(true);
             }
+
+            // =====================================
+            // ACTIVATE SHARE
+            // =====================================
 
             share.setActive(true);
 

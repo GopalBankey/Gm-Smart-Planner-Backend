@@ -63,6 +63,10 @@ public class FriendServiceImpl
     // =====================================
     // SEND FRIEND REQUEST
     // =====================================
+// =====================================
+// SEND FRIEND REQUEST
+// =====================================
+
     @Override
     @Transactional
     public void sendFriendRequest(
@@ -80,22 +84,25 @@ public class FriendServiceImpl
                                 username
                         );
 
+        // =====================================
+        // GET ACTIVE RECEIVER
+        // =====================================
+
         User receiver =
 
                 getUserById(
                         receiverId
                 );
 
+        // =====================================
         // SELF REQUEST
+        // =====================================
+
         if (
-
                 sender.getId()
-
                         .equals(
-
                                 receiver.getId()
                         )
-
         ) {
 
             throw new InvalidRequestException(
@@ -104,15 +111,15 @@ public class FriendServiceImpl
             );
         }
 
+        // =====================================
         // ALREADY FRIEND
+        // =====================================
+
         if (
 
                 friendshipRepository
-
                         .existsByUserAndFriend(
-
                                 sender,
-
                                 receiver
                         )
 
@@ -124,11 +131,13 @@ public class FriendServiceImpl
             );
         }
 
+        // =====================================
         // REVERSE REQUEST
+        // =====================================
+
         if (
 
                 friendRequestRepository
-
                         .existsBySenderAndReceiverAndStatus(
 
                                 receiver,
@@ -146,6 +155,10 @@ public class FriendServiceImpl
             );
         }
 
+        // =====================================
+        // FIND EXISTING REQUEST
+        // =====================================
+
         FriendRequest request =
 
                 friendRequestRepository
@@ -161,7 +174,10 @@ public class FriendServiceImpl
                                 null
                         );
 
+        // =====================================
         // EXISTING REQUEST
+        // =====================================
+
         if (
 
                 request != null
@@ -205,6 +221,10 @@ public class FriendServiceImpl
 
         } else {
 
+            // =====================================
+            // CREATE NEW REQUEST
+            // =====================================
+
             request =
                     new FriendRequest();
 
@@ -227,6 +247,10 @@ public class FriendServiceImpl
                     );
         }
 
+        // =====================================
+        // SEND NOTIFICATION
+        // =====================================
+
         sendNotification(
 
                 receiver,
@@ -242,6 +266,10 @@ public class FriendServiceImpl
                 NotificationType.FRIEND_REQUEST
         );
 
+        // =====================================
+        // LOG
+        // =====================================
+
         log.info(
 
                 "Friend request sent from {} to {}",
@@ -254,6 +282,10 @@ public class FriendServiceImpl
     // =====================================
     // ACCEPT FRIEND REQUEST
     // =====================================
+    // =====================================
+// ACCEPT FRIEND REQUEST
+// =====================================
+
     @Override
     public void acceptFriendRequest(
 
@@ -264,32 +296,58 @@ public class FriendServiceImpl
     ) {
 
         User currentUser =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
 
         FriendRequest request =
-                getFriendRequest(requestId);
 
+                getFriendRequest(
+                        requestId
+                );
+
+        // =====================================
         // VALIDATE RECEIVER
-        if (!request.getReceiver()
-                .getId()
-                .equals(currentUser.getId())) {
+        // =====================================
+
+        if (
+
+                !request.getReceiver()
+                        .getId()
+                        .equals(
+                                currentUser.getId()
+                        )
+
+        ) {
 
             throw new InvalidRequestException(
+
                     "You are not authorized to accept this request"
             );
         }
 
+        // =====================================
         // VALIDATE STATUS
-        if (request.getStatus()
-                != FriendRequestStatus.PENDING) {
+        // =====================================
+
+        if (
+
+                request.getStatus()
+                        != FriendRequestStatus.PENDING
+
+        ) {
 
             throw new InvalidRequestException(
+
                     "Invalid friend request status"
             );
         }
+
+        // =====================================
+        // GET USERS
+        // =====================================
 
         User sender =
                 request.getSender();
@@ -297,38 +355,103 @@ public class FriendServiceImpl
         User receiver =
                 request.getReceiver();
 
+        // =====================================
+        // VALIDATE SENDER ACTIVE
+        // =====================================
+
+        if (
+
+                sender == null
+                        ||
+                        !Boolean.TRUE.equals(
+                                sender.isActive()
+                        )
+
+        ) {
+
+            throw new InvalidRequestException(
+
+                    "This user's account is no longer available"
+            );
+        }
+
+        // =====================================
+        // VALIDATE RECEIVER ACTIVE
+        // =====================================
+
+        if (
+
+                receiver == null
+                        ||
+                        !Boolean.TRUE.equals(
+                                receiver.isActive()
+                        )
+
+        ) {
+
+            throw new InvalidRequestException(
+
+                    "Your account is no longer active"
+            );
+        }
+
+        // =====================================
         // ALREADY FRIENDS
+        // =====================================
+
         boolean alreadyFriends =
+
                 friendshipRepository
                         .existsByUserAndFriend(
+
                                 sender,
+
                                 receiver
                         );
 
         if (alreadyFriends) {
 
             throw new InvalidRequestException(
+
                     "Users are already friends"
             );
         }
 
+        // =====================================
         // CREATE BOTH SIDE FRIENDSHIPS
+        // =====================================
+
         createFriendship(
+
                 sender,
+
                 receiver
         );
 
         createFriendship(
+
                 receiver,
+
                 sender
         );
 
+        // =====================================
         // UPDATE REQUEST STATUS
+        // =====================================
+
         request.setStatus(
+
                 FriendRequestStatus.ACCEPTED
         );
 
-        friendRequestRepository.save(request);
+        friendRequestRepository
+                .save(
+                        request
+                );
+
+        // =====================================
+        // SEND NOTIFICATION
+        // =====================================
 
         sendNotification(
 
@@ -337,22 +460,30 @@ public class FriendServiceImpl
                 "Friend Request Accepted",
 
                 receiver.getName()
-                        + " accepted your friend request",
+                        +
+                        " accepted your friend request",
 
                 receiver.getId(),
 
                 NotificationType.FRIEND_REQUEST_ACCEPTED
         );
 
+        // =====================================
+        // LOG
+        // =====================================
+
         log.info(
+
                 "Friend request accepted : {}",
+
                 requestId
         );
     }
 
-    // =====================================
-    // REJECT FRIEND REQUEST
-    // =====================================
+// =====================================
+// REJECT FRIEND REQUEST
+// =====================================
+
     @Override
     public void rejectFriendRequest(
 
@@ -363,31 +494,108 @@ public class FriendServiceImpl
     ) {
 
         User currentUser =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
 
         FriendRequest request =
-                getFriendRequest(requestId);
 
-        if (!request.getReceiver()
-                .getId()
-                .equals(currentUser.getId())) {
+                getFriendRequest(
+                        requestId
+                );
+
+        // =====================================
+        // VALIDATE RECEIVER
+        // =====================================
+
+        if (
+
+                !request.getReceiver()
+                        .getId()
+                        .equals(
+                                currentUser.getId()
+                        )
+
+        ) {
 
             throw new InvalidRequestException(
+
                     "You are not authorized to reject this request"
             );
         }
 
+        // =====================================
+        // VALIDATE STATUS
+        // =====================================
+
+        if (
+
+                request.getStatus()
+                        != FriendRequestStatus.PENDING
+
+        ) {
+
+            throw new InvalidRequestException(
+
+                    "Invalid friend request status"
+            );
+        }
+
+        // =====================================
+        // VALIDATE SENDER
+        // =====================================
+
+        if (
+
+                request.getSender() == null
+                        ||
+                        !Boolean.TRUE.equals(
+                                request.getSender()
+                                        .isActive()
+                        )
+
+        ) {
+
+            /*
+             * Deleted user's request should not
+             * be actionable anymore.
+             */
+            request.setStatus(
+                    FriendRequestStatus.REJECTED
+            );
+
+            friendRequestRepository
+                    .save(
+                            request
+                    );
+
+            return;
+        }
+
+        // =====================================
+        // REJECT REQUEST
+        // =====================================
+
         request.setStatus(
+
                 FriendRequestStatus.REJECTED
         );
 
-        friendRequestRepository.save(request);
+        friendRequestRepository
+                .save(
+                        request
+                );
+
+        // =====================================
+        // LOG
+        // =====================================
 
         log.info(
+
                 "Friend request rejected : {}",
+
                 requestId
         );
     }
@@ -395,6 +603,10 @@ public class FriendServiceImpl
     // =====================================
     // CANCEL FRIEND REQUEST
     // =====================================
+// =====================================
+// CANCEL FRIEND REQUEST
+// =====================================
+
     @Override
     public void cancelFriendRequest(
 
@@ -405,44 +617,89 @@ public class FriendServiceImpl
     ) {
 
         User sender =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // GET ACTIVE RECEIVER
+        // =====================================
 
         User receiver =
-                getUserById(receiverId);
+
+                getUserById(
+                        receiverId
+                );
+
+        // =====================================
+        // FIND REQUEST
+        // =====================================
 
         FriendRequest request =
+
                 friendRequestRepository
+
                         .findBySenderAndReceiver(
+
                                 sender,
+
                                 receiver
                         )
+
                         .orElseThrow(() ->
+
                                 new ResourceNotFoundException(
+
                                         "Friend request not found"
                                 )
                         );
 
-        if (request.getStatus()
-                != FriendRequestStatus.PENDING) {
+        // =====================================
+        // VALIDATE STATUS
+        // =====================================
+
+        if (
+
+                request.getStatus()
+                        != FriendRequestStatus.PENDING
+
+        ) {
 
             throw new InvalidRequestException(
+
                     "Cannot cancel this request"
             );
         }
 
+        // =====================================
+        // CANCEL REQUEST
+        // =====================================
+
         request.setStatus(
+
                 FriendRequestStatus.CANCELLED
         );
 
-        friendRequestRepository.save(request);
+        friendRequestRepository
+                .save(
+                        request
+                );
+
+        // =====================================
+        // LOG
+        // =====================================
 
         log.info(
+
                 "Friend request cancelled"
         );
     }
+
+// =====================================
+// REMOVE FRIEND
+// =====================================
 
     @Override
     public void removeFriend(
@@ -454,56 +711,92 @@ public class FriendServiceImpl
     ) {
 
         User currentUser =
+
                 userHelperService
-                        .getCurrentUser(username);
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // GET ACTIVE FRIEND
+        // =====================================
 
         User friend =
-                getUserById(friendId);
+
+                getUserById(
+                        friendId
+                );
+
+        // =====================================
+        // CHECK FRIENDSHIP
+        // =====================================
 
         boolean isFriend =
+
                 friendshipRepository
                         .existsByUserAndFriend(
+
                                 currentUser,
+
                                 friend
                         );
 
         if (!isFriend) {
 
             throw new InvalidRequestException(
+
                     "User is not your friend"
             );
         }
 
+        // =====================================
         // DELETE BOTH SIDE FRIENDSHIPS
+        // =====================================
 
         friendshipRepository
                 .deleteByUserAndFriend(
+
                         currentUser,
+
                         friend
                 );
 
         friendshipRepository
                 .deleteByUserAndFriend(
+
                         friend,
+
                         currentUser
                 );
 
+        // =====================================
         // DELETE OLD FRIEND REQUEST
+        // =====================================
 
         friendRequestRepository
+
                 .findBySenderAndReceiverOrSenderAndReceiver(
 
                         currentUser,
+
                         friend,
 
                         friend,
+
                         currentUser
                 )
+
                 .ifPresent(
+
                         friendRequestRepository::delete
                 );
 
+        // =====================================
+        // LOG
+        // =====================================
+
         log.info(
+
                 "Friend removed successfully"
         );
     }
@@ -511,63 +804,107 @@ public class FriendServiceImpl
     // =====================================
     // GET FRIEND REQUESTS
     // =====================================
+    // =====================================
+
     @Override
     @Transactional(readOnly = true)
     public List<FriendRequestDTO>
     getFriendRequests(
+
             String username
+
     ) {
 
         User currentUser =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // GET ACTIVE RECEIVED REQUESTS
+        // =====================================
 
         List<FriendRequest> requests =
+
                 friendRequestRepository
-                        .findAllByReceiverAndStatusOrderByCreatedAtDesc(
+                        .findAllActiveReceivedRequests(
 
                                 currentUser,
 
                                 FriendRequestStatus.PENDING
                         );
 
-        return requests.stream()
-                .map(friendMapper::mapToFriendRequestDTO)
+        // =====================================
+        // MAP RESPONSE
+        // =====================================
+
+        return requests
+                .stream()
+                .map(
+                        friendMapper
+                                ::mapToFriendRequestDTO
+                )
                 .toList();
     }
 
     // =====================================
     // GET FRIENDS
     // =====================================
+
     @Override
     @Transactional(readOnly = true)
     public List<FriendDTO>
     getFriends(
+
             String username
+
     ) {
 
         User currentUser =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // GET ACTIVE FRIENDSHIPS
+        // =====================================
 
         List<Friendship> friendships =
+
                 friendshipRepository
-                        .findAllByUserOrderByCreatedAtDesc(
+
+                        .findAllByUserAndFriendActiveTrueOrderByCreatedAtDesc(
+
                                 currentUser
                         );
 
-        return friendships.stream()
-                .map(friendMapper::mapToFriendDTO)
+        // =====================================
+        // MAP RESPONSE
+        // =====================================
+
+        return friendships
+
+                .stream()
+
+                .map(
+                        friendMapper
+                                ::mapToFriendDTO
+                )
+
                 .toList();
     }
 
     // =====================================
     // SEARCH USERS
     // =====================================
+// =====================================
+// SEARCH USERS
+// =====================================
+
     @Override
     @Transactional(readOnly = true)
     public List<UserSearchDTO>
@@ -580,38 +917,70 @@ public class FriendServiceImpl
     ) {
 
         User currentUser =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
 
-        if (query == null
-                || query.isBlank()) {
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // VALIDATE QUERY
+        // =====================================
+
+        if (
+                query == null
+                        ||
+                        query.isBlank()
+        ) {
 
             throw new InvalidRequestException(
+
                     "Search query is required"
             );
         }
 
+        // =====================================
+        // SEARCH ACTIVE USERS
+        // =====================================
+
         List<User> users =
-                userRepository.searchUsers(
 
-                        query.trim(),
+                userRepository
+                        .searchUsers(
 
-                        currentUser.getId()
-                );
+                                query.trim(),
 
-        return users.stream()
+                                currentUser.getId()
+                        );
+
+        // =====================================
+        // EXTRA ACTIVE USER SAFETY CHECK
+        // =====================================
+
+        return users
+
+                .stream()
+
+                .filter(
+                        user ->
+                                Boolean.TRUE.equals(
+                                        user.isActive()
+                                )
+                )
 
                 .map(user -> {
 
                     FriendshipStatus status =
+
                             getFriendshipStatus(
+
                                     currentUser,
+
                                     user
                             );
 
                     UserSearchDTO dto =
+
                             friendMapper
                                     .mapToUserSearchDTO(
                                             user
@@ -630,7 +999,12 @@ public class FriendServiceImpl
     // =====================================
     // GET FRIENDSHIP STATUS
     // =====================================
-    private FriendshipStatus getFriendshipStatus(
+// =====================================
+// GET FRIENDSHIP STATUS
+// =====================================
+
+    private FriendshipStatus
+    getFriendshipStatus(
 
             User currentUser,
 
@@ -638,8 +1012,29 @@ public class FriendServiceImpl
 
     ) {
 
+        // =====================================
+        // TARGET USER INACTIVE
+        // =====================================
+
+        if (
+
+                targetUser == null
+                        ||
+                        !Boolean.TRUE.equals(
+                                targetUser.isActive()
+                        )
+
+        ) {
+
+            return null;
+        }
+
+        // =====================================
         // FRIENDS
+        // =====================================
+
         boolean isFriend =
+
                 friendshipRepository
                         .existsByUserAndFriend(
 
@@ -653,8 +1048,12 @@ public class FriendServiceImpl
             return FriendshipStatus.FRIENDS;
         }
 
+        // =====================================
         // REQUEST SENT
+        // =====================================
+
         boolean requestSent =
+
                 friendRequestRepository
                         .existsBySenderAndReceiverAndStatus(
 
@@ -670,8 +1069,12 @@ public class FriendServiceImpl
             return FriendshipStatus.REQUEST_SENT;
         }
 
+        // =====================================
         // REQUEST RECEIVED
+        // =====================================
+
         boolean requestReceived =
+
                 friendRequestRepository
                         .existsBySenderAndReceiverAndStatus(
 
@@ -686,6 +1089,10 @@ public class FriendServiceImpl
 
             return FriendshipStatus.REQUEST_RECEIVED;
         }
+
+        // =====================================
+        // ADD FRIEND
+        // =====================================
 
         return FriendshipStatus.ADD_FRIEND;
     }
@@ -716,16 +1123,35 @@ public class FriendServiceImpl
     // =====================================
     // GET USER BY ID
     // =====================================
+// =====================================
+// GET ACTIVE USER BY ID
+// =====================================
+
     private User getUserById(
+
             Long userId
+
     ) {
 
         return userRepository
+
                 .findById(userId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "User not found"
-                        )
+
+                .filter(
+
+                        user ->
+                                Boolean.TRUE.equals(
+                                        user.isActive()
+                                )
+                )
+
+                .orElseThrow(
+
+                        () ->
+                                new ResourceNotFoundException(
+
+                                        "User not found or account is no longer active"
+                                )
                 );
     }
 

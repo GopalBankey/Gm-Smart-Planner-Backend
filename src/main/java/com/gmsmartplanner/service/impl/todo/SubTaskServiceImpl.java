@@ -205,6 +205,10 @@ public class SubTaskServiceImpl
                 );
     }
 
+// =====================================
+// SEND NOTIFICATION TO SHARED USERS
+// =====================================
+
     private void sendNotificationToSharedUsers(
 
             Todo todo,
@@ -222,28 +226,68 @@ public class SubTaskServiceImpl
         List<User> receivers =
                 new java.util.ArrayList<>();
 
-        // OWNER
-        receivers.add(
-                todo.getOwner()
-        );
+        // =====================================
+        // ADD ACTIVE OWNER
+        // =====================================
 
-        // SHARED USERS
+        if (
+                todo.getOwner() != null
+                        &&
+                        todo.getOwner().isActive()
+        ) {
+
+            receivers.add(
+                    todo.getOwner()
+            );
+        }
+
+        // =====================================
+        // ADD ACTIVE SHARED USERS
+        // =====================================
+
         receivers.addAll(
 
                 todoShareRepository
-                        .findAllByTodoAndActiveTrue(todo)
+                        .findAllByTodoAndActiveTrue(
+                                todo
+                        )
                         .stream()
-                        .map(TodoShare::getSharedWithUser)
+                        .map(
+                                TodoShare::getSharedWithUser
+                        )
+                        .filter(
+                                receiver ->
+                                        receiver != null
+                                                &&
+                                                receiver.isActive()
+                        )
                         .toList()
         );
 
+        // =====================================
+        // SEND NOTIFICATIONS
+        // =====================================
+
         for (User receiver : receivers) {
 
-            if (receiver.getId()
-                    .equals(actionUser.getId())) {
+            // =====================================
+            // SKIP ACTION USER
+            // =====================================
+
+            if (
+                    receiver.getId()
+                            .equals(
+                                    actionUser.getId()
+                            )
+            ) {
 
                 continue;
             }
+
+            // =====================================
+            // DATABASE NOTIFICATION
+            // =====================================
+
             notificationHelperService
                     .createNotification(
 
@@ -251,8 +295,7 @@ public class SubTaskServiceImpl
 
                             todo.getId(),
 
-                            NotificationReferenceType
-                                    .TODO,
+                            NotificationReferenceType.TODO,
 
                             title,
 
@@ -261,14 +304,24 @@ public class SubTaskServiceImpl
                             type
                     );
 
+            // =====================================
+            // FCM
+            // =====================================
+
             UserAuth auth =
                     userAuthRepository
-                            .findByUser(receiver)
+                            .findByUser(
+                                    receiver
+                            )
                             .orElse(null);
 
-            if (auth == null
-                    || auth.getFcmToken() == null
-                    || auth.getFcmToken().isBlank()) {
+            if (
+                    auth == null
+                            ||
+                            auth.getFcmToken() == null
+                            ||
+                            auth.getFcmToken().isBlank()
+            ) {
 
                 continue;
             }
@@ -291,9 +344,13 @@ public class SubTaskServiceImpl
 
             } catch (Exception e) {
 
-                auth.setFcmToken(null);
+                auth.setFcmToken(
+                        null
+                );
 
-                userAuthRepository.save(auth);
+                userAuthRepository.save(
+                        auth
+                );
             }
         }
     }
@@ -317,9 +374,10 @@ public class SubTaskServiceImpl
     }
 
 
-    // =====================================
-    // VALIDATE ACCESS
-    // =====================================
+// =====================================
+// VALIDATE ACCESS
+// =====================================
+
     private void validateTodoAccess(
 
             Todo todo,
@@ -328,10 +386,50 @@ public class SubTaskServiceImpl
 
     ) {
 
+        // =====================================
+        // CURRENT USER MUST BE ACTIVE
+        // =====================================
+
+        if (
+                user == null
+                        ||
+                        !user.isActive()
+        ) {
+
+            throw new ResourceNotFoundException(
+                    "User account is no longer active"
+            );
+        }
+
+        // =====================================
+        // TODO OWNER MUST BE ACTIVE
+        // =====================================
+
+        if (
+                todo.getOwner() == null
+                        ||
+                        !todo.getOwner().isActive()
+        ) {
+
+            throw new ResourceNotFoundException(
+                    "Todo not found"
+            );
+        }
+
+        // =====================================
+        // OWNER ACCESS
+        // =====================================
+
         boolean isOwner =
                 todo.getOwner()
                         .getId()
-                        .equals(user.getId());
+                        .equals(
+                                user.getId()
+                        );
+
+        // =====================================
+        // SHARED ACCESS
+        // =====================================
 
         boolean isShared =
                 todoShareRepository
@@ -340,14 +438,21 @@ public class SubTaskServiceImpl
                                 user
                         );
 
-        if (!isOwner && !isShared) {
+        // =====================================
+        // ACCESS DENIED
+        // =====================================
+
+        if (
+                !isOwner
+                        &&
+                        !isShared
+        ) {
 
             throw new ResourceNotFoundException(
                     "Todo not found"
             );
         }
     }
-
     // =====================================
     // CREATE ACTIVITY
     // =====================================

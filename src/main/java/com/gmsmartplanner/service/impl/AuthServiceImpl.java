@@ -203,6 +203,10 @@
             // VERIFY MOBILE LOGIN OTP
             // =========================================
 
+            // =========================================
+// VERIFY MOBILE LOGIN OTP
+// =========================================
+
             @Override
             public LoginResponseDTO verifyMobileOtp(
 
@@ -216,7 +220,6 @@
                 );
 
                 User user =
-
                         userRepository
                                 .findByMobileNumber(
                                         dto.getMobileNumber()
@@ -228,8 +231,21 @@
                                                 )
                                 );
 
+                // =====================================
+                // USER MUST BE ACTIVE
+                // =====================================
+
+                if (!user.isActive()) {
+
+                    throw new ResourceNotFoundException(
+                            "User not found or account is no longer active"
+                    );
+                }
+
                 UserAuth userAuth =
-                        getUserAuth(user);
+                        getUserAuth(
+                                user
+                        );
 
                 // =====================================
                 // VALIDATE OTP + EXPIRY
@@ -252,7 +268,10 @@
                         true
                 );
 
+                // =====================================
                 // OTP USED
+                // =====================================
+
                 userAuth.setOtp(
                         null
                 );
@@ -278,12 +297,20 @@
             // GOOGLE LOGIN
             // =========================================
 
+            // =========================================
+// GOOGLE LOGIN
+// =========================================
+
             @Override
             public LoginResponseDTO googleLogin(
+
                     GoogleLoginDTO dto
+
             ) {
 
-                validateGoogleRequest(dto);
+                validateGoogleRequest(
+                        dto
+                );
 
                 log.info(
                         "Google login initiated for email : {}",
@@ -310,43 +337,57 @@
                             dto.getEmail()
                     );
 
-                    user = authMapper.createGoogleUser(
+                    user =
+                            authMapper.createGoogleUser(
 
-                            dto.getEmail(),
+                                    dto.getEmail(),
 
-                            dto.getName(),
+                                    dto.getName(),
 
-                            dto.getProfileImageUrl()
+                                    dto.getProfileImageUrl()
+                            );
+
+                    user.setProfileCompleted(
+                            false
                     );
 
-                    user.setProfileCompleted(false);
+                    user =
+                            userRepository.save(
+                                    user
+                            );
 
-                    user = userRepository.save(user);
+                    userAuth =
+                            authMapper.createUserAuth(
 
-                    userAuth = authMapper.createUserAuth(
+                                    user,
 
-                            user,
+                                    LoginType.GOOGLE,
 
-                            LoginType.GOOGLE,
+                                    dto.getFcmToken(),
 
-                            dto.getFcmToken(),
-
-                            dto.getFirebaseUid()
-                    );
+                                    dto.getFirebaseUid()
+                            );
 
                     // GOOGLE EMAIL VERIFIED
 
-                    userAuth.setEmailVerified(true);
+                    userAuth.setEmailVerified(
+                            true
+                    );
 
                     // MOBILE VERIFICATION PENDING
 
-                    userAuth.setOtpVerified(false);
-
-                    userAuth.setEmailOtpVerified(false);
-
-                    userAuth = userAuthRepository.save(
-                            userAuth
+                    userAuth.setOtpVerified(
+                            false
                     );
+
+                    userAuth.setEmailOtpVerified(
+                            false
+                    );
+
+                    userAuth =
+                            userAuthRepository.save(
+                                    userAuth
+                            );
                 }
 
                 // =====================================
@@ -355,41 +396,57 @@
 
                 else {
 
-                    user = existingUser.get();
+                    user =
+                            existingUser.get();
 
-                    userAuth = getUserAuth(user);
-                    userAuth.setLoginType(LoginType.GOOGLE);
+                    // =====================================
+                    // ACCOUNT MUST BE ACTIVE
+                    // =====================================
 
+                    if (!user.isActive()) {
 
-                    // LOGIN TYPE VALIDATION
-        //
-        //            if (userAuth.getLoginType()
-        //                    != LoginType.GOOGLE) {
-        //
-        //                throw new InvalidRequestException(
-        //                        "This account is registered with mobile login"
-        //                );
-        //            }
+                        throw new ResourceNotFoundException(
+                                "User not found or account is no longer active"
+                        );
+                    }
 
+                    userAuth =
+                            getUserAuth(
+                                    user
+                            );
+
+                    userAuth.setLoginType(
+                            LoginType.GOOGLE
+                    );
+
+                    // =====================================
                     // EXTRA SECURITY
+                    // =====================================
 
-                    if (!user.getEmail().equals(
-                            dto.getEmail()
-                    )) {
+                    if (!user.getEmail()
+                            .equals(
+                                    dto.getEmail()
+                            )) {
 
                         throw new InvalidRequestException(
                                 "Invalid Google account"
                         );
                     }
 
-                    // GOOGLE EMAIL ALWAYS VERIFIED
+                    // =====================================
+                    // GOOGLE EMAIL VERIFIED
+                    // =====================================
 
                     if (!userAuth.isEmailVerified()) {
 
-                        userAuth.setEmailVerified(true);
+                        userAuth.setEmailVerified(
+                                true
+                        );
                     }
 
+                    // =====================================
                     // UPDATE FCM TOKEN
+                    // =====================================
 
                     authMapper.updateFcmToken(
 
@@ -398,7 +455,9 @@
                             dto.getFcmToken()
                     );
 
-                    userAuthRepository.save(userAuth);
+                    userAuthRepository.save(
+                            userAuth
+                    );
                 }
 
                 return buildLoginResponse(
@@ -411,10 +470,13 @@
                 );
             }
 
-
             // =========================================
         // RESEND OTP
         // =========================================
+
+            // =========================================
+// RESEND OTP
+// =========================================
 
             @Override
             public String resendOtp(
@@ -434,7 +496,6 @@
                 ) {
 
                     User user =
-
                             userRepository
                                     .findByMobileNumber(
                                             dto.getMobileNumber()
@@ -446,8 +507,21 @@
                                                     )
                                     );
 
+                    // =====================================
+                    // USER MUST BE ACTIVE
+                    // =====================================
+
+                    if (!user.isActive()) {
+
+                        throw new ResourceNotFoundException(
+                                "User not found or account is no longer active"
+                        );
+                    }
+
                     UserAuth userAuth =
-                            getUserAuth(user);
+                            getUserAuth(
+                                    user
+                            );
 
                     if (
                             userAuth.isOtpVerified()
@@ -502,7 +576,6 @@
                 ) {
 
                     User user =
-
                             userRepository
                                     .findByEmail(
                                             dto.getEmail()
@@ -514,8 +587,21 @@
                                                     )
                                     );
 
+                    // =====================================
+                    // USER MUST BE ACTIVE
+                    // =====================================
+
+                    if (!user.isActive()) {
+
+                        throw new ResourceNotFoundException(
+                                "User not found or account is no longer active"
+                        );
+                    }
+
                     UserAuth userAuth =
-                            getUserAuth(user);
+                            getUserAuth(
+                                    user
+                            );
 
                     if (
                             userAuth.isEmailOtpVerified()
@@ -573,9 +659,15 @@
                 );
             }
 
+            // =========================================
+// REFRESH TOKEN
+// =========================================
+
             @Override
             public LoginResponseDTO refreshToken(
+
                     RefreshTokenDTO dto
+
             ) {
 
                 log.info(
@@ -593,7 +685,40 @@
                 User user =
                         auth.getUser();
 
+                // =====================================
+                // USER MUST BE ACTIVE
+                // =====================================
+
+                if (
+                        user == null
+                                ||
+                                !user.isActive()
+                ) {
+
+                    refreshTokenService.deleteByAuth(
+                            auth
+                    );
+
+                    auth.setJwtToken(
+                            null
+                    );
+
+                    auth.setFcmToken(
+                            null
+                    );
+
+                    userAuthRepository.save(
+                            auth
+                    );
+
+                    throw new ResourceNotFoundException(
+                            "User not found or account is no longer active"
+                    );
+                }
+
+                // =====================================
                 // UPDATE FCM TOKEN
+                // =====================================
 
                 authMapper.updateFcmToken(
 
@@ -602,7 +727,9 @@
                         dto.getFcmToken()
                 );
 
-                userAuthRepository.save(auth);
+                userAuthRepository.save(
+                        auth
+                );
 
                 return buildLoginResponse(
 
@@ -924,6 +1051,10 @@
             // BUILD LOGIN RESPONSE
             // =========================================
 
+// =========================================
+// BUILD LOGIN RESPONSE
+// =========================================
+
             private LoginResponseDTO buildLoginResponse(
 
                     User user,
@@ -934,23 +1065,44 @@
 
             ) {
 
+                // =====================================
+                // ACCOUNT STATUS
+                // =====================================
+
+                if (
+                        user == null
+                                ||
+                                !user.isActive()
+                ) {
+
+                    throw new ResourceNotFoundException(
+                            "User not found or account is no longer active"
+                    );
+                }
+
                 String identifier =
                         user.getId().toString();
 
+                // =====================================
                 // DELETE OLD TOKENS
+                // =====================================
 
                 refreshTokenService.deleteByAuth(
                         userAuth
                 );
 
+                // =====================================
                 // ACCESS TOKEN
+                // =====================================
 
                 String accessToken =
                         jwtService.generateToken(
                                 identifier
                         );
 
+                // =====================================
                 // REFRESH TOKEN
+                // =====================================
 
                 String refreshToken =
                         jwtService.generateRefreshToken(

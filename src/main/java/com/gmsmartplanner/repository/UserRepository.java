@@ -11,21 +11,43 @@ import java.util.Optional;
 public interface UserRepository
         extends JpaRepository<User, Long> {
 
-    Optional<User> findByEmail(
+    // =====================================
+    // FIND USER BY EMAIL
+    // =====================================
+
+    Optional<User>
+    findByEmail(
             String email
     );
 
-    Optional<User> findByMobileNumber(
+    // =====================================
+    // FIND USER BY MOBILE
+    // =====================================
+
+    Optional<User>
+    findByMobileNumber(
             String mobileNumber
     );
+
+    // =====================================
+    // CHECK EMAIL
+    // =====================================
 
     boolean existsByEmail(
             String email
     );
 
+    // =====================================
+    // CHECK MOBILE
+    // =====================================
+
     boolean existsByMobileNumber(
             String mobileNumber
     );
+
+    // =====================================
+    // SEARCH ACTIVE USERS
+    // =====================================
 
     @Query("""
 
@@ -50,6 +72,8 @@ public interface UserRepository
 
         AND u.id <> :currentUserId
 
+        AND u.active = true
+
         """)
     List<User> searchUsers(
 
@@ -60,12 +84,22 @@ public interface UserRepository
             Long currentUserId
     );
 
-    Optional<User> findByEmailOrMobileNumber(
+    // =====================================
+    // FIND USER BY EMAIL OR MOBILE
+    // =====================================
+
+    Optional<User>
+    findByEmailOrMobileNumber(
 
             String email,
 
             String mobileNumber
     );
+
+    // =====================================
+    // FIND USER BY COUNTRY CODE
+    // AND MOBILE NUMBER
+    // =====================================
 
     Optional<User>
     findByCountryCodeAndMobileNumber(
@@ -75,7 +109,85 @@ public interface UserRepository
             String mobileNumber
     );
 
+    // =====================================
+    // CHECK COUNTRY CODE
+    // AND MOBILE NUMBER
+    // =====================================
+
     boolean existsByCountryCodeAndMobileNumber(
+
+            String countryCode,
+
+            String mobileNumber
+    );
+
+    // =====================================
+    // FIND ACTIVE USER BY EMAIL
+    // =====================================
+
+    Optional<User>
+    findByEmailAndActiveTrue(
+            String email
+    );
+
+    // =====================================
+    // FIND ACTIVE USER BY MOBILE
+    // =====================================
+
+    Optional<User>
+    findByMobileNumberAndActiveTrue(
+            String mobileNumber
+    );
+
+    // =====================================
+    // FIND ACTIVE USER BY COUNTRY CODE
+    // AND MOBILE NUMBER
+    // =====================================
+
+    Optional<User>
+    findByCountryCodeAndMobileNumberAndActiveTrue(
+
+            String countryCode,
+
+            String mobileNumber
+    );
+
+    // =====================================
+    // FIND ACTIVE USER BY EMAIL OR MOBILE
+    // =====================================
+
+    @Query("""
+        SELECT u
+        FROM User u
+
+        WHERE u.active = true
+
+          AND (
+                u.email = :email
+
+                OR
+
+                u.mobileNumber = :mobileNumber
+          )
+
+        """)
+    Optional<User>
+    findActiveByEmailOrMobileNumber(
+
+            @Param("email")
+            String email,
+
+            @Param("mobileNumber")
+            String mobileNumber
+    );
+
+    // =====================================
+    // CHECK ACTIVE COUNTRY CODE
+    // AND MOBILE NUMBER
+    // =====================================
+
+    boolean
+    existsByCountryCodeAndMobileNumberAndActiveTrue(
 
             String countryCode,
 

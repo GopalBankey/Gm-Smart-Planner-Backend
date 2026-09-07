@@ -154,6 +154,8 @@ public class CommentServiceImpl
     // =====================================
     // GET COMMENTS
     // =====================================
+
+
     @Override
     @Transactional(readOnly = true)
     public List<CommentResponseDTO> getComments(
@@ -165,13 +167,15 @@ public class CommentServiceImpl
     ) {
 
         User user =
-                  userHelperService
-                .getCurrentUser(
-                        username
-                );
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
 
         Todo todo =
-                getTodo(todoId);
+                getTodo(
+                        todoId
+                );
 
         validateTodoAccess(
                 todo,
@@ -179,11 +183,22 @@ public class CommentServiceImpl
         );
 
         UserAuth auth =
-                getUserAuth(user);
+                getUserAuth(
+                        user
+                );
 
         return todoCommentRepository
-                .findAllByTodoAndDeletedFalseOrderByCreatedAtAsc(todo)
+                .findAllByTodoAndDeletedFalseOrderByCreatedAtAsc(
+                        todo
+                )
                 .stream()
+                // =====================================
+                // HIDE COMMENTS FROM DELETED USERS
+                // =====================================
+                .filter(comment ->
+                        comment.getUser() != null
+                                && comment.getUser().isActive()
+                )
                 .map(comment ->
                         todoMapper.mapToCommentResponse(
                                 comment,
@@ -311,6 +326,10 @@ public class CommentServiceImpl
     // SEND NOTIFICATION TO SHARED USERS
     // =====================================
 
+// =====================================
+// SEND NOTIFICATION TO SHARED USERS
+// =====================================
+
     private void sendNotificationToSharedUsers(
 
             Todo todo,
@@ -328,29 +347,70 @@ public class CommentServiceImpl
         List<User> receivers =
                 new java.util.ArrayList<>();
 
-        // OWNER
-        receivers.add(
-                todo.getOwner()
-        );
+        // =====================================
+        // ACTIVE OWNER
+        // =====================================
 
-        // SHARED USERS
+        if (
+                todo.getOwner() != null
+                        &&
+                        todo.getOwner().isActive()
+        ) {
+
+            receivers.add(
+                    todo.getOwner()
+            );
+        }
+
+        // =====================================
+        // ACTIVE SHARED USERS
+        // =====================================
+
         receivers.addAll(
 
                 todoShareRepository
-                        .findAllByTodoAndActiveTrue(todo)
+                        .findAllByTodoAndActiveTrue(
+                                todo
+                        )
                         .stream()
-                        .map(TodoShare::getSharedWithUser)
+
+                        .map(
+                                TodoShare::getSharedWithUser
+                        )
+
+                        .filter(
+                                user ->
+                                        user != null
+                                                &&
+                                                user.isActive()
+                        )
+
                         .toList()
         );
 
+        // =====================================
+        // SEND NOTIFICATIONS
+        // =====================================
+
         for (User receiver : receivers) {
 
-            // SKIP SELF
-            if (receiver.getId()
-                    .equals(actionUser.getId())) {
+            // =====================================
+            // SKIP ACTION USER
+            // =====================================
+
+            if (
+                    receiver.getId()
+                            .equals(
+                                    actionUser.getId()
+                            )
+            ) {
 
                 continue;
             }
+
+            // =====================================
+            // DATABASE NOTIFICATION
+            // =====================================
 
             notificationHelperService
                     .createNotification(
@@ -359,8 +419,7 @@ public class CommentServiceImpl
 
                             todo.getId(),
 
-                            NotificationReferenceType
-                                    .TODO,
+                            NotificationReferenceType.TODO,
 
                             title,
 
@@ -369,14 +428,24 @@ public class CommentServiceImpl
                             type
                     );
 
+            // =====================================
+            // FCM
+            // =====================================
+
             UserAuth auth =
                     userAuthRepository
-                            .findByUser(receiver)
+                            .findByUser(
+                                    receiver
+                            )
                             .orElse(null);
 
-            if (auth == null
-                    || auth.getFcmToken() == null
-                    || auth.getFcmToken().isBlank()) {
+            if (
+                    auth == null
+                            ||
+                            auth.getFcmToken() == null
+                            ||
+                            auth.getFcmToken().isBlank()
+            ) {
 
                 continue;
             }
@@ -399,107 +468,16 @@ public class CommentServiceImpl
 
             } catch (Exception e) {
 
-                auth.setFcmToken(null);
+                auth.setFcmToken(
+                        null
+                );
 
-                userAuthRepository.save(auth);
+                userAuthRepository.save(
+                        auth
+                );
             }
         }
     }
-//    private void sendNotificationToSharedUsers(
-//
-//            Todo todo,
-//
-//            User actionUser,
-//
-//            String title,
-//
-//            String message,
-//
-//            NotificationType type
-//
-//    ) {
-//
-//        List<TodoShare> sharedUsers =
-//                todoShareRepository
-//                        .findAllByTodoAndActiveTrue(todo);
-//
-//        for (TodoShare share : sharedUsers) {
-//
-//            User sharedUser =
-//                    share.getSharedWithUser();
-//
-//            // =====================================
-//            // PREVENT SELF NOTIFICATION
-//            // =====================================
-//
-//            if (sharedUser.getId()
-//                    .equals(actionUser.getId())) {
-//
-//                continue;
-//            }
-//
-//            // =====================================
-//            // SAVE DB NOTIFICATION
-//            // =====================================
-//
-//            notificationHelperService
-//                    .createNotification(
-//
-//                            sharedUser,
-//
-//                            todo,
-//
-//                            title,
-//
-//                            message,
-//
-//                            type
-//                    );
-//
-//            // =====================================
-//            // SEND PUSH NOTIFICATION
-//            // =====================================
-//
-//            UserAuth auth =
-//                    userAuthRepository
-//                            .findByUser(sharedUser)
-//                            .orElse(null);
-//
-//            if (auth == null
-//                    || auth.getFcmToken() == null
-//                    || auth.getFcmToken().isBlank()) {
-//
-//                continue;
-//            }
-//
-//            try {
-//
-//                firebaseNotificationService
-//                        .sendNotification(
-//
-//                                auth.getFcmToken(),
-//
-//                                title,
-//
-//                                message,
-//
-//                                todo.getId(),
-//
-//                                type
-//                        );
-//
-//            } catch (Exception e) {
-//
-//                // =====================================
-//                // INVALID TOKEN HANDLING
-//                // =====================================
-//
-//                auth.setFcmToken(null);
-//
-//                userAuthRepository.save(auth);
-//            }
-//        }
-//    }
 
     // =====================================
     // GET COMMENT
@@ -558,6 +536,10 @@ public class CommentServiceImpl
     // =====================================
     // VALIDATE ACCESS
     // =====================================
+// =====================================
+// VALIDATE ACCESS
+// =====================================
+
     private void validateTodoAccess(
 
             Todo todo,
@@ -566,10 +548,50 @@ public class CommentServiceImpl
 
     ) {
 
+        // =====================================
+        // CURRENT USER MUST BE ACTIVE
+        // =====================================
+
+        if (
+                user == null
+                        ||
+                        !user.isActive()
+        ) {
+
+            throw new ResourceNotFoundException(
+                    "User account is no longer active"
+            );
+        }
+
+        // =====================================
+        // TODO OWNER MUST BE ACTIVE
+        // =====================================
+
+        if (
+                todo.getOwner() == null
+                        ||
+                        !todo.getOwner().isActive()
+        ) {
+
+            throw new ResourceNotFoundException(
+                    "Todo not found"
+            );
+        }
+
+        // =====================================
+        // OWNER ACCESS
+        // =====================================
+
         boolean isOwner =
                 todo.getOwner()
                         .getId()
-                        .equals(user.getId());
+                        .equals(
+                                user.getId()
+                        );
+
+        // =====================================
+        // SHARED ACCESS
+        // =====================================
 
         boolean isShared =
                 todoShareRepository
@@ -578,14 +600,21 @@ public class CommentServiceImpl
                                 user
                         );
 
-        if (!isOwner && !isShared) {
+        // =====================================
+        // ACCESS DENIED
+        // =====================================
+
+        if (
+                !isOwner
+                        &&
+                        !isShared
+        ) {
 
             throw new ResourceNotFoundException(
                     "Todo not found"
             );
         }
     }
-
     // =====================================
     // CREATE ACTIVITY
     // =====================================

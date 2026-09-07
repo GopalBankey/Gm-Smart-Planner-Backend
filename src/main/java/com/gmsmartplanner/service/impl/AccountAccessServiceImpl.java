@@ -54,34 +54,31 @@ public class AccountAccessServiceImpl
     // SEND OTP
     // =====================================
 
+// =====================================
+// SEND OTP
+// =====================================
+
     @Override
     @Transactional
     public AccountAccessResponseDTO sendOtp(
-
             String username,
-
             SendAccessOtpRequestDTO dto
-
     ) {
 
         // ==========================
         // MEMBER
         // ==========================
 
-        User member =
-                getUser(username);
+        User member = getUser(username);
 
         // ==========================
         // COUNTRY CODE
         // ==========================
 
         String countryCode =
-
                 dto.getCountryCode() == null
                         || dto.getCountryCode().isBlank()
-
                         ? "+91"
-
                         : dto.getCountryCode();
 
         // ==========================
@@ -89,14 +86,11 @@ public class AccountAccessServiceImpl
         // ==========================
 
         User owner =
-
                 userRepository
-
-                        .findByCountryCodeAndMobileNumber(
+                        .findByCountryCodeAndMobileNumberAndActiveTrue(
                                 countryCode,
                                 dto.getMobileNumber()
                         )
-
                         .orElseThrow(
                                 () -> new ResourceNotFoundException(
                                         "User not found"
@@ -119,22 +113,19 @@ public class AccountAccessServiceImpl
         // ==========================
 
         AccountAccess access =
-
                 repository
-
                         .findByOwnerAndModule(
                                 owner,
                                 AccessModule.HEALTH
                         )
-
                         .orElse(null);
 
         // ==========================
         // ALREADY ADDED
         // ==========================
 
-        if (access != null &&
-                Boolean.TRUE.equals(access.getOtpVerified())) {
+        if (access != null
+                && Boolean.TRUE.equals(access.getOtpVerified())) {
 
             throw new InvalidRequestException(
                     "This account has already been added."
@@ -146,11 +137,8 @@ public class AccountAccessServiceImpl
         // ==========================
 
         UserAuth auth =
-
                 userAuthRepository
-
                         .findByUser(owner)
-
                         .orElseThrow(
                                 () -> new ResourceNotFoundException(
                                         "User auth not found"
@@ -164,9 +152,7 @@ public class AccountAccessServiceImpl
         MobileAuthDTO mobile = new MobileAuthDTO();
 
         mobile.setCountryCode(countryCode);
-
         mobile.setMobileNumber(dto.getMobileNumber());
-
         mobile.setFcmToken(auth.getFcmToken());
 
         authService.initiateMobileAuth(mobile);
@@ -176,17 +162,13 @@ public class AccountAccessServiceImpl
         // ==========================
 
         String otp =
-
                 userAuthRepository
-
                         .findByUser(owner)
-
                         .orElseThrow(
                                 () -> new ResourceNotFoundException(
                                         "OTP not found"
                                 )
                         )
-
                         .getOtp();
 
         // ==========================
@@ -202,7 +184,6 @@ public class AccountAccessServiceImpl
             );
 
             access.setCountryCode(countryCode);
-
             access.setMember(member);
 
             repository.save(access);
@@ -228,104 +209,59 @@ public class AccountAccessServiceImpl
     }
 
     @Override
-    public AccountAccessResponseDTO
-    resendOtp(
-
+    public AccountAccessResponseDTO resendOtp(
             String username,
-
             String mobileNumber
-
     ) {
 
         User member =
-                getUser(
-                        username
-                );
+                getUser(username);
 
         User owner =
-
                 userRepository
-
-                        .findByMobileNumber(
+                        .findByMobileNumberAndActiveTrue(
                                 mobileNumber
                         )
-
                         .orElseThrow(
-
-                                () ->
-
-                                        new ResourceNotFoundException(
-
-                                                "User not found"
-                                        )
+                                () -> new ResourceNotFoundException(
+                                        "User not found"
+                                )
                         );
 
         AccountAccess access =
-
                 repository
-
                         .findByOwnerAndMemberAndModuleAndActiveTrue(
-
                                 owner,
-
                                 member,
-
                                 AccessModule.HEALTH
                         )
-
                         .orElseThrow(
-
-                                () ->
-
-                                        new ResourceNotFoundException(
-
-                                                "Access request not found"
-                                        )
+                                () -> new ResourceNotFoundException(
+                                        "Access request not found"
+                                )
                         );
 
-        if (
-
-                Boolean.TRUE.equals(
-
-                        access
-                                .getOtpVerified()
-                )
-
-        ) {
+        if (Boolean.TRUE.equals(access.getOtpVerified())) {
 
             throw new InvalidRequestException(
-
                     "Access already verified"
             );
         }
 
         String otp =
-
-                authService
-
-                        .resendOtp(
-
-                                buildResendDto(
-                                        mobileNumber
-                                )
-                        );
+                authService.resendOtp(
+                        buildResendDto(mobileNumber)
+                );
 
         mapper.updateOtp(
-
                 access,
-
                 otp,
-
                 access.getDisplayName()
         );
 
-        repository.save(
-                access
-        );
+        repository.save(access);
 
-        return mapper.toResponse(
-                access
-        );
+        return mapper.toResponse(access);
     }
 
     // =====================================
@@ -335,37 +271,26 @@ public class AccountAccessServiceImpl
 
     @Override
     public AccountAccessResponseDTO verifyOtp(
-
             String username,
-
             VerifyAccessOtpRequestDTO dto
-
     ) {
 
         User member =
-                getUser(
-                        username
-                );
+                getUser(username);
 
         // ==========================
         // OWNER
         // ==========================
 
         User owner =
-
                 userRepository
-
-                        .findByMobileNumber(
+                        .findByMobileNumberAndActiveTrue(
                                 dto.getMobileNumber()
                         )
-
                         .orElseThrow(
-
-                                () ->
-
-                                        new ResourceNotFoundException(
-                                                "User not found"
-                                        )
+                                () -> new ResourceNotFoundException(
+                                        "User not found"
+                                )
                         );
 
         // ==========================
@@ -373,38 +298,23 @@ public class AccountAccessServiceImpl
         // ==========================
 
         AccountAccess access =
-
                 repository
-
                         .findByOwnerAndMemberAndModuleAndActiveTrue(
-
                                 owner,
-
                                 member,
-
                                 AccessModule.HEALTH
                         )
-
                         .orElseThrow(
-
-                                () ->
-
-                                        new ResourceNotFoundException(
-                                                "Access not found"
-                                        )
+                                () -> new ResourceNotFoundException(
+                                        "Access not found"
+                                )
                         );
 
         // ==========================
         // ALREADY VERIFIED
         // ==========================
 
-        if (
-
-                Boolean.TRUE.equals(
-                        access.getOtpVerified()
-                )
-
-        ) {
+        if (Boolean.TRUE.equals(access.getOtpVerified())) {
 
             throw new InvalidRequestException(
                     "Access already verified"
@@ -416,32 +326,20 @@ public class AccountAccessServiceImpl
         // ==========================
 
         UserAuth auth =
-
                 userAuthRepository
-
-                        .findByUser(
-                                owner
-                        )
-
+                        .findByUser(owner)
                         .orElseThrow(
-
-                                () ->
-
-                                        new ResourceNotFoundException(
-                                                "User auth not found"
-                                        )
+                                () -> new ResourceNotFoundException(
+                                        "User auth not found"
+                                )
                         );
 
         // ==========================
         // OTP NOT AVAILABLE
         // ==========================
 
-        if (
-
-                auth.getOtp() == null
-                        ||
-                        auth.getOtpCreatedAt() == null
-        ) {
+        if (auth.getOtp() == null
+                || auth.getOtpCreatedAt() == null) {
 
             throw new InvalidOtpException(
                     "OTP has expired. Please request a new OTP."
@@ -453,28 +351,16 @@ public class AccountAccessServiceImpl
         // ==========================
 
         LocalDateTime expiryTime =
-
                 auth.getOtpCreatedAt()
                         .plusMinutes(2);
 
-        if (
-
-                !LocalDateTime.now()
-                        .isBefore(
-                                expiryTime
-                        )
-
-        ) {
+        if (!LocalDateTime.now().isBefore(expiryTime)) {
 
             auth.setOtp(null);
-
             auth.setOtpCreatedAt(null);
-
             auth.setOtpVerified(false);
 
-            userAuthRepository.save(
-                    auth
-            );
+            userAuthRepository.save(auth);
 
             throw new InvalidOtpException(
                     "OTP has expired. Please request a new OTP."
@@ -485,28 +371,17 @@ public class AccountAccessServiceImpl
         // OTP VALIDATION
         // ==========================
 
-        if (
-
-                dto.getOtp() == null
-                        ||
-                        dto.getOtp().isBlank()
-        ) {
+        if (dto.getOtp() == null
+                || dto.getOtp().isBlank()) {
 
             throw new InvalidOtpException(
                     "OTP is required"
             );
         }
 
-        if (
-
-                !auth.getOtp()
-                        .trim()
-                        .equals(
-                                dto.getOtp()
-                                        .trim()
-                        )
-
-        ) {
+        if (!auth.getOtp()
+                .trim()
+                .equals(dto.getOtp().trim())) {
 
             throw new InvalidOtpException(
                     "Invalid OTP"
@@ -517,29 +392,20 @@ public class AccountAccessServiceImpl
         // VERIFY ACCESS
         // ==========================
 
-        mapper.verify(
-                access
-        );
+        mapper.verify(access);
 
-        repository.save(
-                access
-        );
+        repository.save(access);
 
         // ==========================
         // CLEAR OTP
         // ==========================
 
         auth.setOtp(null);
-
         auth.setOtpCreatedAt(null);
 
-        userAuthRepository.save(
-                auth
-        );
+        userAuthRepository.save(auth);
 
-        return mapper.toResponse(
-                access
-        );
+        return mapper.toResponse(access);
     }
 
 // =====================================
@@ -547,161 +413,127 @@ public class AccountAccessServiceImpl
 // =====================================
 
     @Override
-    public AccountAccessResponseDTO
-    updatePermission(
-
+    public AccountAccessResponseDTO updatePermission(
             String username,
-
             Long accessId,
-
             UpdateAccessPermissionRequestDTO dto
-
     ) {
 
         User owner =
-                getUser(
-                        username
-                );
+                getUser(username);
 
         AccountAccess access =
-                getAccess(
-                        accessId
-                );
+                getAccess(accessId);
 
+        // =====================================
+        // OWNER AND MEMBER MUST BE ACTIVE
+        // =====================================
+
+        if (access.getOwner() == null
+                || !access.getOwner().isActive()
+                || access.getMember() == null
+                || !access.getMember().isActive()) {
+
+            throw new ResourceNotFoundException(
+                    "Access not found"
+            );
+        }
+
+        // =====================================
         // ONLY OWNER
+        // =====================================
 
-        if (
-
-                !access
-                        .getOwner()
-                        .getId()
-                        .equals(
-                                owner.getId()
-                        )
-
-        ) {
+        if (!access.getOwner()
+                .getId()
+                .equals(owner.getId())) {
 
             throw new InvalidRequestException(
-
                     "Only owner can update permission"
             );
         }
 
+        // =====================================
         // MEMBER MUST VERIFY OTP
+        // =====================================
 
-        if (
-
-                !Boolean.TRUE.equals(
-
-                        access
-                                .getOtpVerified()
-                )
-
-        ) {
+        if (!Boolean.TRUE.equals(
+                access.getOtpVerified()
+        )) {
 
             throw new InvalidRequestException(
-
                     "Member must verify OTP first"
             );
         }
 
         mapper.updatePermission(
-
                 access,
-
                 dto
         );
 
-        repository.save(
-                access
-        );
+        repository.save(access);
 
-        return mapper.toResponse(
-                access
-        );
+        return mapper.toResponse(access);
     }
     // =====================================
     // MY ACCESS
     // =====================================
 
-// =====================================
-// MY ACCESS
-// =====================================
 @Override
-@Transactional(
-        readOnly = true
-)
-public List<AccountAccessResponseDTO>
-getMyAccess(
-
+@Transactional(readOnly = true)
+public List<AccountAccessResponseDTO> getMyAccess(
         String username
-
 ) {
 
     User member =
-            getUser(
-                    username
-            );
+            getUser(username);
 
     return repository
-
-            .findAllByMemberAndOtpVerifiedTrue(
-
-                    member
-            )
-
+            .findAllByMemberAndOtpVerifiedTrue(member)
             .stream()
-
-            .map(
-
-                    mapper
-                            ::toResponse
+            .filter(access ->
+                    access.getOwner() != null
+                            && access.getOwner().isActive()
+                            && access.getMember() != null
+                            && access.getMember().isActive()
             )
-
+            .map(mapper::toResponse)
             .toList();
 }
 
     @Override
-    @Transactional(
-            readOnly = true
-    )
-    public OwnerAccessResponseDTO
-    getOwnerAccess(
-
+    @Transactional(readOnly = true)
+    public OwnerAccessResponseDTO getOwnerAccess(
             String username
-
     ) {
 
         User owner =
-                getUser(
-                        username
-                );
+                getUser(username);
 
         AccountAccess access =
-
                 repository
-
                         .findByOwnerAndModuleAndOtpVerifiedTrue(
-
                                 owner,
-
-                                AccessModule
-                                        .HEALTH
+                                AccessModule.HEALTH
                         )
-
                         .orElseThrow(
-
-                                () ->
-
-                                        new ResourceNotFoundException(
-
-                                                "No access found"
-                                        )
+                                () -> new ResourceNotFoundException(
+                                        "No access found"
+                                )
                         );
 
-        return mapper.toOwnerResponse(
-                access
-        );
+        // =====================================
+        // MEMBER MUST STILL BE ACTIVE
+        // =====================================
+
+        if (access.getMember() == null
+                || !access.getMember().isActive()) {
+
+            throw new ResourceNotFoundException(
+                    "No access found"
+            );
+        }
+
+        return mapper.toOwnerResponse(access);
     }
 
     // =====================================
@@ -796,27 +628,34 @@ getMyAccess(
                 );
     }
 
-    private AccountAccess
-    getAccess(
-
+    private AccountAccess getAccess(
             Long id
-
     ) {
 
-        return repository
-                .findById(
-                        id
-                )
-
-                .orElseThrow(
-
-                        () ->
-
-                                new ResourceNotFoundException(
-
+        AccountAccess access =
+                repository
+                        .findById(id)
+                        .orElseThrow(
+                                () -> new ResourceNotFoundException(
                                         "Access not found"
                                 )
-                );
+                        );
+
+        // =====================================
+        // OWNER AND MEMBER MUST BE ACTIVE
+        // =====================================
+
+        if (access.getOwner() == null
+                || !access.getOwner().isActive()
+                || access.getMember() == null
+                || !access.getMember().isActive()) {
+
+            throw new ResourceNotFoundException(
+                    "Access not found"
+            );
+        }
+
+        return access;
     }
 
     private ResendOtpRequestDTO

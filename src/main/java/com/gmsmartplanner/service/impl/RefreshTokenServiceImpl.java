@@ -83,15 +83,18 @@ public class RefreshTokenServiceImpl
         return savedToken;
     }
 
-    // =========================================
-    // VERIFY REFRESH TOKEN
-    // =========================================
+// =========================================
+// VERIFY REFRESH TOKEN
+// =========================================
+
     @Override
     public RefreshToken verify(
             String token
     ) {
 
-        log.info("Verifying refresh token");
+        log.info(
+                "Verifying refresh token"
+        );
 
         RefreshToken refreshToken =
                 refreshTokenRepository
@@ -107,15 +110,65 @@ public class RefreshTokenServiceImpl
                             );
                         });
 
+        // =====================================
+        // CHECK USER
+        // =====================================
+
+        UserAuth auth =
+                refreshToken.getUserAuth();
+
+        if (
+                auth == null
+                        ||
+                        auth.getUser() == null
+        ) {
+
+            refreshTokenRepository.delete(
+                    refreshToken
+            );
+
+            throw new TokenNotFoundException(
+                    "Refresh token is invalid"
+            );
+        }
+
+        // =====================================
+        // USER MUST BE ACTIVE
+        // =====================================
+
+        if (
+                !auth.getUser()
+                        .isActive()
+        ) {
+
+            log.warn(
+                    "Refresh token rejected for inactive user id : {}",
+                    auth.getUser().getId()
+            );
+
+            refreshTokenRepository.delete(
+                    refreshToken
+            );
+
+            throw new TokenNotFoundException(
+                    "Account is no longer active"
+            );
+        }
+
+        // =====================================
         // CHECK EXPIRY
-        if (refreshToken.getExpiryDate()
-                .isBefore(LocalDateTime.now())) {
+        // =====================================
+
+        if (
+                refreshToken.getExpiryDate()
+                        .isBefore(
+                                LocalDateTime.now()
+                        )
+        ) {
 
             log.error(
                     "Refresh token expired for user id : {}",
-                    refreshToken.getUserAuth()
-                            .getUser()
-                            .getId()
+                    auth.getUser().getId()
             );
 
             refreshTokenRepository.delete(

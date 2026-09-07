@@ -1,9 +1,11 @@
 package com.gmsmartplanner.repository.todo;
 
-import com.gmsmartplanner.entity.todo.FriendRequest;
 import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.entity.todo.FriendRequest;
 import com.gmsmartplanner.enums.todo.FriendRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +21,9 @@ public interface FriendRequestRepository
 
     Optional<FriendRequest>
     findBySenderAndReceiver(
+
             User sender,
+
             User receiver
     );
 
@@ -27,7 +31,8 @@ public interface FriendRequestRepository
     // CHECK PENDING REQUEST
     // =====================================
 
-    boolean existsBySenderAndReceiverAndStatus(
+    boolean
+    existsBySenderAndReceiverAndStatus(
 
             User sender,
 
@@ -37,26 +42,54 @@ public interface FriendRequestRepository
     );
 
     // =====================================
-    // GET RECEIVED REQUESTS
+    // GET RECEIVED ACTIVE USER REQUESTS
     // =====================================
 
-    List<FriendRequest>
-    findAllByReceiverAndStatusOrderByCreatedAtDesc(
+    @Query("""
+        SELECT r
+        FROM FriendRequest r
 
+        WHERE r.receiver = :receiver
+
+          AND r.status = :status
+
+          AND r.sender.active = true
+
+        ORDER BY r.createdAt DESC
+        """)
+    List<FriendRequest>
+    findAllActiveReceivedRequests(
+
+            @Param("receiver")
             User receiver,
 
+            @Param("status")
             FriendRequestStatus status
     );
 
     // =====================================
-    // GET SENT REQUESTS
+    // GET SENT ACTIVE USER REQUESTS
     // =====================================
 
-    List<FriendRequest>
-    findAllBySenderAndStatusOrderByCreatedAtDesc(
+    @Query("""
+        SELECT r
+        FROM FriendRequest r
 
+        WHERE r.sender = :sender
+
+          AND r.status = :status
+
+          AND r.receiver.active = true
+
+        ORDER BY r.createdAt DESC
+        """)
+    List<FriendRequest>
+    findAllActiveSentRequests(
+
+            @Param("sender")
             User sender,
 
+            @Param("status")
             FriendRequestStatus status
     );
 
@@ -65,9 +98,15 @@ public interface FriendRequestRepository
     // =====================================
 
     void deleteBySenderAndReceiver(
+
             User sender,
+
             User receiver
     );
+
+    // =====================================
+    // FIND REQUEST IN BOTH DIRECTIONS
+    // =====================================
 
     Optional<FriendRequest>
     findBySenderAndReceiverOrSenderAndReceiver(

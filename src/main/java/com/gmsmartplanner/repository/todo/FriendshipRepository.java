@@ -1,7 +1,7 @@
 package com.gmsmartplanner.repository.todo;
 
-import com.gmsmartplanner.entity.todo.Friendship;
 import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.entity.todo.Friendship;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -16,16 +16,19 @@ public interface FriendshipRepository
     // =====================================
 
     boolean existsByUserAndFriend(
+
             User user,
+
             User friend
     );
 
     // =====================================
-    // GET ALL FRIENDS
+    // GET ACTIVE FRIENDS
     // =====================================
 
     List<Friendship>
-    findAllByUserOrderByCreatedAtDesc(
+    findAllByUserAndFriendActiveTrueOrderByCreatedAtDesc(
+
             User user
     );
 
@@ -34,7 +37,9 @@ public interface FriendshipRepository
     // =====================================
 
     void deleteByUserAndFriend(
+
             User user,
+
             User friend
     );
 }

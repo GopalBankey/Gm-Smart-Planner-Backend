@@ -17,18 +17,31 @@ public class CustomUserDetailsService
     private final UserRepository
             userRepository;
 
+    // =====================================
+    // LOAD USER BY MOBILE NUMBER
+    // =====================================
+
     @Override
     public UserDetails loadUserByUsername(
+
             String mobileNumber
+
     ) throws UsernameNotFoundException {
 
-        User user = userRepository
-                .findByMobileNumber(mobileNumber)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException(
-                                "User not found"
+        User user =
+
+                userRepository
+
+                        .findByMobileNumberAndActiveTrue(
+                                mobileNumber
                         )
-                );
+
+                        .orElseThrow(() ->
+
+                                new UsernameNotFoundException(
+                                        "User not found or account is no longer active"
+                                )
+                        );
 
         return new org.springframework.security.core.userdetails.User(
 
@@ -37,6 +50,7 @@ public class CustomUserDetailsService
                 "",
 
                 Collections.singletonList(
+
                         new SimpleGrantedAuthority(
                                 "USER"
                         )

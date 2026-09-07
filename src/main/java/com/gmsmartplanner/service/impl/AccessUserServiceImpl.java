@@ -275,8 +275,11 @@ public class AccessUserServiceImpl
     // GET ACCESS
     // =====================================
 
-    private AccountAccess
-    getAccess(
+    // =====================================
+// GET ACCESS
+// =====================================
+
+    private AccountAccess getAccess(
 
             String username,
 
@@ -285,81 +288,99 @@ public class AccessUserServiceImpl
     ) {
 
         User member =
-
                 userHelperService
-
                         .getCurrentUser(
                                 username
                         );
 
         AccountAccess access =
-
                 repository
-
                         .findById(
                                 accessId
                         )
-
                         .orElseThrow(
 
                                 () ->
-
                                         new ResourceNotFoundException(
-
                                                 "Access not found"
                                         )
                         );
 
+        // =====================================
+        // VALIDATE MEMBER
+        // =====================================
+
         if (
-
-                !access
-
-                        .getMember()
-
-                        .getId()
-
-                        .equals(
-
-                                member
-                                        .getId()
-                        )
-
+                access.getMember() == null
+                        ||
+                        !access.getMember()
+                                .getId()
+                                .equals(
+                                        member.getId()
+                                )
         ) {
 
             throw new InvalidRequestException(
-
                     "Invalid access"
             );
         }
 
+        // =====================================
+        // MEMBER MUST BE ACTIVE
+        // =====================================
+
         if (
-
-                !Boolean.TRUE.equals(
-
-                        access
-                                .getOtpVerified()
-                )
-
+                !access.getMember()
+                        .isActive()
         ) {
 
             throw new InvalidRequestException(
+                    "Account is no longer active"
+            );
+        }
 
+        // =====================================
+        // OWNER MUST BE ACTIVE
+        // =====================================
+
+        if (
+                access.getOwner() == null
+                        ||
+                        !access.getOwner()
+                                .isActive()
+        ) {
+
+            throw new ResourceNotFoundException(
+                    "Account owner is no longer active"
+            );
+        }
+
+        // =====================================
+        // OTP MUST BE VERIFIED
+        // =====================================
+
+        if (
+                !Boolean.TRUE.equals(
+                        access.getOtpVerified()
+                )
+        ) {
+
+            throw new InvalidRequestException(
                     "Access not verified"
             );
         }
 
+        // =====================================
+        // ACCESS MUST BE ACTIVE
+        // =====================================
+
         if (
-
                 !Boolean.TRUE.equals(
-
-                        access
-                                .getActive()
+                        access.getActive()
                 )
-
         ) {
 
             throw new InvalidRequestException(
-
                     "Access inactive"
             );
         }
