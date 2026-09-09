@@ -13,7 +13,9 @@ import com.gmsmartplanner.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -81,6 +83,7 @@ public class CategoryServiceImpl
     // GET CATEGORIES
     // =====================================
 
+
     @Override
     public List<CategoryResponseDTO>
     getCategories(
@@ -98,28 +101,95 @@ public class CategoryServiceImpl
         if (type == null) {
 
             categories =
+
                     categoryRepository
                             .findAllByActiveTrue();
 
         } else {
 
             List<CategoryType> types =
+
                     List.of(
+
                             type,
+
                             CategoryType.BOTH
                     );
 
             categories =
+
                     categoryRepository
                             .findAllByTypeInAndActiveTrue(
                                     types
                             );
         }
 
-        return categories
-                .stream()
-                .map(categoryMapper::mapToResponse)
-                .toList();
+        // =====================================
+        // MAP NORMAL CATEGORIES
+        // =====================================
+
+        List<CategoryResponseDTO>
+                response =
+
+                categories
+                        .stream()
+                        .map(
+                                categoryMapper
+                                        ::mapToResponse
+                        )
+                        .collect(
+                                Collectors.toCollection(
+                                        ArrayList::new
+                                )
+                        );
+
+        // =====================================
+        // ADD VIRTUAL EMI CATEGORY
+        // =====================================
+    if(type != CategoryType.INCOME)
+    {
+        response.add(
+
+                0,
+
+                CategoryResponseDTO
+                        .builder()
+
+                        .id(
+                                0L
+                        )
+
+                        .name(
+                                "EMI"
+                        )
+
+                        .iconUrl(
+                                null
+                        )
+
+                        .colorCode(
+                                null
+                        )
+
+                        .type(
+                                CategoryType.EXPENSE
+                        )
+
+                        .active(
+                                true
+                        )
+
+                        .build()
+        );
+    }
+
+
+
+        // =====================================
+        // RETURN CATEGORIES
+        // =====================================
+
+        return response;
     }
 
     // =====================================

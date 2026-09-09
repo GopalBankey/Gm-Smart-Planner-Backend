@@ -192,7 +192,7 @@ public class FirebaseNotificationServiceImpl
 
             String body,
 
-            Long todoId,
+            Long id,
 
             NotificationType type
 
@@ -221,8 +221,8 @@ public class FirebaseNotificationServiceImpl
                             // =====================================
 
                             .putData(
-                                    "todoId",
-                                    String.valueOf(todoId)
+                                    "id",
+                                    String.valueOf(id)
                             )
 
                             .putData(

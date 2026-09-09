@@ -279,12 +279,10 @@ public class FriendServiceImpl
                 receiver.getId()
         );
     }
+
     // =====================================
     // ACCEPT FRIEND REQUEST
     // =====================================
-    // =====================================
-// ACCEPT FRIEND REQUEST
-// =====================================
 
     @Override
     public void acceptFriendRequest(

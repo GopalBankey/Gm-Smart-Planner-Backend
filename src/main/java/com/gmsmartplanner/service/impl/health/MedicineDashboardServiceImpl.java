@@ -7,6 +7,8 @@ import com.gmsmartplanner.entity.health.MedicineHistory;
 import com.gmsmartplanner.entity.health.MedicineSchedule;
 import com.gmsmartplanner.enums.health.MedicineHistoryStatus;
 import com.gmsmartplanner.enums.health.MedicineSlot;
+import com.gmsmartplanner.exception.InvalidRequestException;
+import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.health.MedicineDashboardMapper;
 import com.gmsmartplanner.repository.health.MedicineHistoryRepository;
 import com.gmsmartplanner.repository.health.MedicineRepository;
@@ -92,11 +94,13 @@ public class MedicineDashboardServiceImpl
         );
     }
 
-    // =====================================
-    // MISSED
-    // =====================================
+// =====================================
+// MISSED
+// =====================================
 
-    private List<MissedMedicineResponseDTO>
+    private List<
+            MissedMedicineResponseDTO
+            >
     buildMissed(
 
             List<Medicine> medicines,
@@ -105,12 +109,15 @@ public class MedicineDashboardServiceImpl
 
     ) {
 
-        List<MissedMedicineResponseDTO>
+        List<
+                MissedMedicineResponseDTO
+                >
                 result =
 
                 new ArrayList<>();
 
         LocalTime now =
+
                 LocalTime.now();
 
         for (
@@ -122,6 +129,10 @@ public class MedicineDashboardServiceImpl
                 medicines
 
         ) {
+
+            // =====================================
+            // MEDICINE SCHEDULES
+            // =====================================
 
             List<MedicineSchedule>
                     schedules =
@@ -141,46 +152,101 @@ public class MedicineDashboardServiceImpl
 
             ) {
 
-                boolean processed =
+                // =====================================
+                // CHECK WHETHER THIS SCHEDULE
+                // WAS ALREADY TAKEN
+                // =====================================
+
+                boolean taken =
 
                         histories
                                 .stream()
-
                                 .anyMatch(
 
                                         h ->
 
                                                 h.getSchedule()
-
                                                         != null
 
                                                         &&
 
-                                                        schedule
+                                                        h.getSchedule()
                                                                 .getId()
-
                                                                 .equals(
-
-                                                                        h
-                                                                                .getSchedule()
-                                                                                .getId()
+                                                                        schedule.getId()
                                                                 )
+
+                                                        &&
+
+                                                        h.getStatus()
+                                                                ==
+                                                                MedicineHistoryStatus.TAKEN
                                 );
 
-                if (
+                // =====================================
+                // CHECK WHETHER THIS SCHEDULE
+                // WAS ALREADY SKIPPED
+                // =====================================
 
-                        !processed
+                boolean skipped =
+
+                        histories
+                                .stream()
+                                .anyMatch(
+
+                                        h ->
+
+                                                h.getSchedule()
+                                                        != null
+
+                                                        &&
+
+                                                        h.getSchedule()
+                                                                .getId()
+                                                                .equals(
+                                                                        schedule.getId()
+                                                                )
+
+                                                        &&
+
+                                                        h.getStatus()
+                                                                ==
+                                                                MedicineHistoryStatus.SKIPPED
+                                );
+
+                // =====================================
+                // CHECK WHETHER SCHEDULE TIME PASSED
+                // =====================================
+
+                boolean timePassed =
+
+                        schedule
+                                .getTime()
+                                .isBefore(
+                                        now
+                                );
+
+                // =====================================
+                // MEDICINE IS MISSED
+                // =====================================
+
+                boolean missed =
+
+                        timePassed
 
                                 &&
 
-                                schedule
-                                        .getTime()
+                                !taken
 
-                                        .isBefore(
-                                                now
-                                        )
+                                &&
 
-                ) {
+                                !skipped;
+
+                // =====================================
+                // ADD TO MISSED LIST
+                // =====================================
+
+                if (missed) {
 
                     result.add(
 
@@ -431,5 +497,230 @@ public class MedicineDashboardServiceImpl
         );
 
         return result;
+    }
+
+    // =====================================
+// GET MISSED MEDICINE DETAILS
+// =====================================
+
+
+
+    @Override
+    public MedicineCardResponseDTO
+    getMissedMedicineDetails(
+
+            String username,
+
+            Long medicineId,
+
+            Long scheduleId
+
+    ) {
+
+        // =====================================
+        // CURRENT USER
+        // =====================================
+
+        User user =
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // MEDICINE
+        // =====================================
+
+        Medicine medicine =
+
+                medicineRepository
+                        .findById(
+                                medicineId
+                        )
+
+                        .filter(
+                                Medicine::isActive
+                        )
+
+                        .filter(
+                                m ->
+                                        m.getUser()
+                                                .getId()
+                                                .equals(
+                                                        user.getId()
+                                                )
+                        )
+
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Medicine not found"
+                                        )
+                        );
+
+        // =====================================
+        // MEDICINE SCHEDULE
+        // =====================================
+
+        MedicineSchedule schedule =
+
+                scheduleRepository
+                        .findById(
+                                scheduleId
+                        )
+
+                        .filter(
+                                s ->
+                                        Boolean.TRUE.equals(
+                                                s.getActive()
+                                        )
+                        )
+
+                        .filter(
+                                s ->
+                                        s.getMedicine()
+                                                .getId()
+                                                .equals(
+                                                        medicine.getId()
+                                                )
+                        )
+
+                        .orElseThrow(
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Medicine schedule not found"
+                                        )
+                        );
+
+        // =====================================
+        // CURRENT TIME
+        // =====================================
+
+        LocalTime now =
+
+                LocalTime.now();
+
+        // =====================================
+        // VERIFY SCHEDULE TIME HAS PASSED
+        // =====================================
+
+        if (
+                !schedule
+                        .getTime()
+                        .isBefore(
+                                now
+                        )
+        ) {
+
+            throw new InvalidRequestException(
+                    "Medicine is not missed"
+            );
+        }
+
+        // =====================================
+        // TODAY'S MEDICINE HISTORY
+        // =====================================
+
+        List<MedicineHistory>
+                todayHistory =
+
+                historyRepository
+                        .findAllByUserAndDateAndActiveTrue(
+
+                                user,
+
+                                LocalDate.now()
+                        );
+
+        // =====================================
+        // CHECK WHETHER THIS SCHEDULE
+        // WAS ALREADY TAKEN
+        // =====================================
+
+        boolean taken =
+
+                todayHistory
+                        .stream()
+                        .anyMatch(
+
+                                h ->
+
+                                        h.getSchedule()
+                                                != null
+
+                                                &&
+
+                                                h.getSchedule()
+                                                        .getId()
+                                                        .equals(
+                                                                schedule.getId()
+                                                        )
+
+                                                &&
+
+                                                h.getStatus()
+                                                        ==
+                                                        MedicineHistoryStatus.TAKEN
+                        );
+
+        // =====================================
+        // CHECK WHETHER THIS SCHEDULE
+        // WAS ALREADY SKIPPED
+        // =====================================
+
+        boolean skipped =
+
+                todayHistory
+                        .stream()
+                        .anyMatch(
+
+                                h ->
+
+                                        h.getSchedule()
+                                                != null
+
+                                                &&
+
+                                                h.getSchedule()
+                                                        .getId()
+                                                        .equals(
+                                                                schedule.getId()
+                                                        )
+
+                                                &&
+
+                                                h.getStatus()
+                                                        ==
+                                                        MedicineHistoryStatus.SKIPPED
+                        );
+
+        // =====================================
+        // ALREADY PROCESSED
+        // =====================================
+
+        if (
+                taken
+                        ||
+                        skipped
+        ) {
+
+            throw new InvalidRequestException(
+                    "Medicine has already been processed"
+            );
+        }
+
+        // =====================================
+        // RETURN MISSED MEDICINE DETAILS
+        // =====================================
+
+        return mapper.toCard(
+
+                medicine,
+
+                schedule,
+
+                MedicineHistoryStatus.MISSED
+        );
     }
 }

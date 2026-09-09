@@ -7,6 +7,7 @@ import com.gmsmartplanner.entity.health.MedicineSchedule;
 import com.gmsmartplanner.enums.health.MedicineHistoryStatus;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
@@ -87,14 +88,15 @@ public class MedicineDashboardMapper {
                 .pillPhoto(
                         medicine.getPillPhoto()
                 )
-
                 .scheduledTime(
-
                         schedule
                                 .getTime()
-                                .toString()
+                                .format(
+                                        DateTimeFormatter.ofPattern(
+                                                "hh:mm a"
+                                        )
+                                )
                 )
-
                 .build();
     }
     // =====================================
@@ -239,10 +241,13 @@ public class MedicineDashboardMapper {
                 )
 
                 .time(
-
                         schedule
                                 .getTime()
-                                .toString()
+                                .format(
+                                        DateTimeFormatter.ofPattern(
+                                                "hh:mm a"
+                                        )
+                                )
                 )
 
                 .status(

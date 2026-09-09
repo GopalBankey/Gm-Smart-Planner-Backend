@@ -1,5 +1,6 @@
 package com.gmsmartplanner.controller.health;
 
+import com.gmsmartplanner.dto.response.health.MedicineCardResponseDTO;
 import com.gmsmartplanner.dto.response.health.MedicineDashboardResponseDTO;
 import com.gmsmartplanner.payload.ApiResponse;
 import com.gmsmartplanner.service.AccessUserService;
@@ -90,6 +91,86 @@ public class MedicineDashboardController {
 
                                                                 accessId
                                                         )
+                                        )
+                        )
+
+                        .build()
+        );
+    }
+
+    // =====================================
+// MISSED MEDICINE DETAILS
+// =====================================
+
+    @GetMapping(
+            "/missed/{medicineId}/{scheduleId}"
+    )
+    public ResponseEntity<
+            ApiResponse<
+                    MedicineCardResponseDTO
+                    >
+            >
+    getMissedMedicineDetails(
+
+            Authentication authentication,
+
+            @RequestHeader(
+                    value =
+                            "X-ACCESS-ID",
+                    required =
+                            false
+            )
+            Long accessId,
+
+            @PathVariable
+            Long medicineId,
+
+            @PathVariable
+            Long scheduleId
+
+    ) {
+
+        accessUserService
+                .checkViewPermission(
+
+                        authentication
+                                .getName(),
+
+                        accessId
+                );
+
+        return ResponseEntity.ok(
+
+                ApiResponse
+
+                        .<MedicineCardResponseDTO>
+                                builder()
+
+                        .success(
+                                true
+                        )
+
+                        .message(
+                                "Missed medicine details fetched successfully"
+                        )
+
+                        .data(
+
+                                medicineDashboardService
+                                        .getMissedMedicineDetails(
+
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication
+                                                                        .getName(),
+
+                                                                accessId
+                                                        ),
+
+                                                medicineId,
+
+                                                scheduleId
                                         )
                         )
 
