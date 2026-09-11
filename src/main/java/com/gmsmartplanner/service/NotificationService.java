@@ -28,4 +28,12 @@ public interface NotificationService {
     void markAllNotificationsAsRead(
             String username
     );
+
+    void deleteNotification(
+
+            String username,
+
+            Long notificationId
+
+    );
 }

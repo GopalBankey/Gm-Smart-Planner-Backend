@@ -161,5 +161,101 @@ public class NotificationServiceImpl
 
     }
 
+    // =====================================
+// DELETE NOTIFICATION
+// =====================================
+
+
+    @Override
+    public void deleteNotification(
+
+            String username,
+
+            Long notificationId
+
+    ) {
+
+        // =====================================
+        // GET CURRENT USER
+        // =====================================
+
+        User user =
+
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+        // =====================================
+        // GET NOTIFICATION
+        // =====================================
+
+        Notification notification =
+
+                todoNotificationRepository
+                        .findById(
+                                notificationId
+                        )
+                        .orElseThrow(
+
+                                () ->
+                                        new ResourceNotFoundException(
+                                                "Notification not found"
+                                        )
+                        );
+
+        // =====================================
+        // VALIDATE NOTIFICATION OWNER
+        // =====================================
+
+        if (
+                notification.getUser() == null
+
+                        ||
+
+                        !notification
+                                .getUser()
+                                .getId()
+                                .equals(
+                                        user.getId()
+                                )
+        ) {
+
+            throw new InvalidRequestException(
+                    "Invalid notification access"
+            );
+        }
+
+        // =====================================
+        // CHECK ALREADY DELETED
+        // =====================================
+
+        if (
+                Boolean.TRUE.equals(
+                        notification.getDeleted()
+                )
+        ) {
+
+            throw new ResourceNotFoundException(
+                    "Notification not found"
+            );
+        }
+
+        // =====================================
+        // SOFT DELETE NOTIFICATION
+        // =====================================
+
+        notification.setDeleted(
+                true
+        );
+
+        // =====================================
+        // SAVE NOTIFICATION
+        // =====================================
+
+        todoNotificationRepository.save(
+                notification
+        );
+    }
 
 }
