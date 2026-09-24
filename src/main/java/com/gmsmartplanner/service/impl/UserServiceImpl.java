@@ -251,10 +251,6 @@ public class UserServiceImpl
     // VERIFY MOBILE OTP
     // =========================================
 
-    // =========================================
-// VERIFY MOBILE OTP
-// =========================================
-
     @Override
     public User verifyMobileOtp(
 
@@ -343,10 +339,6 @@ public class UserServiceImpl
     // =========================================
     // VERIFY EMAIL OTP
     // =========================================
-
-// =========================================
-// VERIFY EMAIL OTP
-// =========================================
 
     @Override
     public User verifyEmailOtp(
@@ -717,14 +709,6 @@ public class UserServiceImpl
                 );
     }
 
-    // =========================================
-    // VALIDATE OTP
-    // =========================================
-
-    // =========================================
-// VALIDATE OTP
-// =========================================
-
 // =========================================
 // VALIDATE MOBILE OTP
 // =========================================
@@ -807,37 +791,6 @@ public class UserServiceImpl
             );
         }
     }
-
-//    private void validateOtp(
-//
-//            UserAuth userAuth,
-//
-//            String enteredOtp
-//
-//    ) {
-//
-//        if (enteredOtp == null
-//                || enteredOtp.isBlank()) {
-//
-//            throw new InvalidOtpException(
-//                    "OTP is required"
-//            );
-//        }
-//
-//        if (userAuth.getOtp() == null
-//                || !userAuth.getOtp().equals(
-//                enteredOtp
-//        )) {
-//
-//            throw new InvalidOtpException(
-//                    "Invalid OTP"
-//            );
-//        }
-//    }
-
-    // =========================================
-    // GENERATE OTP
-    // =========================================
 
     private String generateOtp() {
 
