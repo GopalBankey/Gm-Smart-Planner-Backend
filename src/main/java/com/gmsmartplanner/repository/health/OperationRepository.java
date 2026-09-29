@@ -1,4 +1,23 @@
 package com.gmsmartplanner.repository.health;
 
-public class OperationRepository {
+import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.entity.health.Operation;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface OperationRepository
+        extends JpaRepository<Operation, Long> {
+
+    List<Operation>
+    findAllByUserAndActiveTrueOrderByDateDesc(
+            User user
+    );
+
+    Optional<Operation>
+    findByIdAndUserAndActiveTrue(
+            Long id,
+            User user
+    );
 }

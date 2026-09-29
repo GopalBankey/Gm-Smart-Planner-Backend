@@ -1,4 +1,10 @@
 package com.gmsmartplanner.enums.health;
 
-public class AllergySeverity {
+public enum AllergySeverity {
+
+    MILD,
+
+    MODERATE,
+
+    SEVERE
 }
