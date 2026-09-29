@@ -866,6 +866,9 @@ public class UserServiceImpl
                 .note(
                         user.getNote()
                 )
+                .address(
+                        user.getAddress()
+                )
 
                 .profileCompleted(
                         user.isProfileCompleted()

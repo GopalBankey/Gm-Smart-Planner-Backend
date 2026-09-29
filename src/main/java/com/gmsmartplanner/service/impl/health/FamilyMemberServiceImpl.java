@@ -36,6 +36,7 @@ public class FamilyMemberServiceImpl
     private final FileUploadService
             fileUploadService;
 
+
     // =====================================
     // CREATE
     // =====================================
@@ -54,6 +55,7 @@ public class FamilyMemberServiceImpl
                         .getCurrentUser(
                                 username
                         );
+
 
         // =====================================
         // PREVENT USING OWN MOBILE NUMBER
@@ -75,15 +77,49 @@ public class FamilyMemberServiceImpl
             );
         }
 
+
+        // =====================================
+        // CHECK MAX 2 EMERGENCY CONTACTS
+        // =====================================
+
+        if (dto.isEmergencyContact()) {
+
+            long emergencyCount =
+                    familyMemberRepository
+                            .countByUserAndEmergencyContactTrueAndActiveTrue(
+                                    user
+                            );
+
+            if (emergencyCount >= 2) {
+
+                throw new InvalidRequestException(
+                        "You already have 2 emergency contacts. " +
+                                "Please remove one existing emergency contact " +
+                                "before adding a new one."
+                );
+            }
+        }
+
+
+        // =====================================
+        // CREATE MEMBER
+        // =====================================
+
         FamilyMember member =
                 familyMemberMapper
                         .createFamilyMember(
                                 dto
                         );
 
+
         member.setUser(
                 user
         );
+
+
+        // =====================================
+        // PROFILE IMAGE
+        // =====================================
 
         if (
                 dto.getImage() != null
@@ -103,17 +139,24 @@ public class FamilyMemberServiceImpl
             );
         }
 
+
+        // =====================================
+        // SAVE
+        // =====================================
+
         FamilyMember saved =
                 familyMemberRepository
                         .save(
                                 member
                         );
 
+
         return familyMemberMapper
                 .mapToResponse(
                         saved
                 );
     }
+
 
     // =====================================
     // GET ALL
@@ -133,17 +176,23 @@ public class FamilyMemberServiceImpl
                                 username
                         );
 
+
         return familyMemberRepository
+
                 .findAllByUserAndActiveTrueOrderByFullNameAsc(
                         user
                 )
+
                 .stream()
+
                 .map(
                         familyMemberMapper
                                 ::mapToResponse
                 )
+
                 .toList();
     }
+
 
     // =====================================
     // GET BY ID
@@ -170,6 +219,43 @@ public class FamilyMemberServiceImpl
                 );
     }
 
+
+    // =====================================
+    // GET EMERGENCY CONTACTS
+    // =====================================
+
+    @Override
+    public List<FamilyMemberResponseDTO>
+    getEmergencyFamilyMembers(
+
+            String username
+
+    ) {
+
+        User user =
+                userHelperService
+                        .getCurrentUser(
+                                username
+                        );
+
+
+        return familyMemberRepository
+
+                .findAllByUserAndEmergencyContactTrueAndActiveTrue(
+                        user
+                )
+
+                .stream()
+
+                .map(
+                        familyMemberMapper
+                                ::mapToResponse
+                )
+
+                .toList();
+    }
+
+
     // =====================================
     // UPDATE
     // =====================================
@@ -191,6 +277,7 @@ public class FamilyMemberServiceImpl
                                 username
                         );
 
+
         // =====================================
         // PREVENT USING OWN MOBILE NUMBER
         // =====================================
@@ -211,6 +298,11 @@ public class FamilyMemberServiceImpl
             );
         }
 
+
+        // =====================================
+        // GET MEMBER
+        // =====================================
+
         FamilyMember member =
                 getMember(
 
@@ -219,6 +311,41 @@ public class FamilyMemberServiceImpl
                         username
                 );
 
+
+        // =====================================
+        // CHECK EMERGENCY CONTACT LIMIT
+        // =====================================
+
+        if (
+                dto.getEmergencyContact() != null
+                        &&
+                        dto.getEmergencyContact()
+                        &&
+                        !member.isEmergencyContact()
+        ) {
+
+            long emergencyCount =
+                    familyMemberRepository
+                            .countByUserAndEmergencyContactTrueAndActiveTrue(
+                                    user
+                            );
+
+
+            if (emergencyCount >= 2) {
+
+                throw new InvalidRequestException(
+                        "You already have 2 emergency contacts. " +
+                                "Please remove one existing emergency contact " +
+                                "before adding a new one."
+                );
+            }
+        }
+
+
+        // =====================================
+        // UPDATE MEMBER
+        // =====================================
+
         familyMemberMapper
                 .updateFamilyMember(
 
@@ -226,6 +353,11 @@ public class FamilyMemberServiceImpl
 
                         dto
                 );
+
+
+        // =====================================
+        // PROFILE IMAGE
+        // =====================================
 
         if (
                 dto.getImage() != null
@@ -245,17 +377,24 @@ public class FamilyMemberServiceImpl
             );
         }
 
+
+        // =====================================
+        // SAVE
+        // =====================================
+
         FamilyMember updated =
                 familyMemberRepository
                         .save(
                                 member
                         );
 
+
         return familyMemberMapper
                 .mapToResponse(
                         updated
                 );
     }
+
 
     // =====================================
     // DELETE
@@ -278,15 +417,31 @@ public class FamilyMemberServiceImpl
                         username
                 );
 
+
+        // =====================================
+        // SOFT DELETE
+        // =====================================
+
         member.setActive(
                 false
         );
+
+
+        // =====================================
+        // REMOVE EMERGENCY STATUS
+        // =====================================
+
+        member.setEmergencyContact(
+                false
+        );
+
 
         familyMemberRepository
                 .save(
                         member
                 );
     }
+
 
     // =====================================
     // MEMBER
@@ -306,7 +461,9 @@ public class FamilyMemberServiceImpl
                                 username
                         );
 
+
         return familyMemberRepository
+
                 .findByIdAndUserAndActiveTrue(
 
                         memberId,

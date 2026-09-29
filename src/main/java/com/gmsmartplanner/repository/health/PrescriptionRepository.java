@@ -1,0 +1,23 @@
+package com.gmsmartplanner.repository.health;
+
+import com.gmsmartplanner.entity.User;
+import com.gmsmartplanner.entity.health.Prescription;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+
+public interface PrescriptionRepository
+        extends JpaRepository<Prescription, Long> {
+
+    List<Prescription>
+    findAllByUserAndActiveTrueOrderByPrescriptionDateDesc(
+            User user
+    );
+
+    Optional<Prescription>
+    findByIdAndUserAndActiveTrue(
+            Long id,
+            User user
+    );
+}

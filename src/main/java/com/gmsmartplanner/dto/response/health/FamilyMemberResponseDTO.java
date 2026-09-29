@@ -30,4 +30,6 @@ public class FamilyMemberResponseDTO {
     private Integer age;
 
     private String notes;
+
+    private boolean emergencyContact;
 }

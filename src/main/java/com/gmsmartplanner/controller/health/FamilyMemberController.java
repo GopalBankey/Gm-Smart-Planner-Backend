@@ -388,4 +388,60 @@ public class FamilyMemberController {
                         .build()
         );
     }
+
+    // =====================================
+// GET EMERGENCY CONTACTS
+// =====================================
+
+    @GetMapping("/emergency")
+    public ResponseEntity<
+            ApiResponse<List<FamilyMemberResponseDTO>>
+            >
+    getEmergencyContacts(
+
+            Authentication authentication,
+
+            @RequestHeader(
+                    value = "X-ACCESS-ID",
+                    required = false
+            )
+            Long accessId
+
+    ) {
+
+        accessUserService
+                .checkViewPermission(
+                        authentication.getName(),
+                        accessId
+                );
+
+        return ResponseEntity.ok(
+
+                ApiResponse
+                        .<List<FamilyMemberResponseDTO>>builder()
+
+                        .success(true)
+
+                        .message(
+                                "Emergency family members fetched successfully"
+                        )
+
+                        .data(
+
+                                familyMemberService
+                                        .getEmergencyFamilyMembers(
+
+                                                accessUserService
+                                                        .getEffectiveUsername(
+
+                                                                authentication.getName(),
+
+                                                                accessId
+                                                        )
+                                        )
+                        )
+
+                        .build()
+        );
+    }
 }

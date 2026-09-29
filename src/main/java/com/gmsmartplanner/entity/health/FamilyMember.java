@@ -123,6 +123,17 @@ public class FamilyMember
     )
     private boolean active = true;
 
+    // =====================================
+// EMERGENCY CONTACT
+// =====================================
+
+    @Column(
+            name = "is_emergency_contact",
+            nullable = false,
+            columnDefinition = "boolean default false"
+    )
+    private boolean emergencyContact = false;
+
     private Integer age;
 
     @Column(columnDefinition = "TEXT")

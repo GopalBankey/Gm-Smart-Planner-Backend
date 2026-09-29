@@ -46,4 +46,6 @@ public class UserResponseDTO {
     private String firebaseUid;
 
     private LocalDateTime createdAt;
+
+    private String address;
 }

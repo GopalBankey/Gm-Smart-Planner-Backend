@@ -20,6 +20,7 @@ public interface FamilyMemberRepository
             User user
     );
 
+
     // =====================================
     // GET BY ID
     // =====================================
@@ -28,6 +29,28 @@ public interface FamilyMemberRepository
     findByIdAndUserAndActiveTrue(
 
             Long id,
+
+            User user
+    );
+
+
+    // =====================================
+    // GET EMERGENCY CONTACTS
+    // =====================================
+
+    List<FamilyMember>
+    findAllByUserAndEmergencyContactTrueAndActiveTrue(
+
+            User user
+    );
+
+
+    // =====================================
+    // COUNT EMERGENCY CONTACTS
+    // =====================================
+
+    long
+    countByUserAndEmergencyContactTrueAndActiveTrue(
 
             User user
     );

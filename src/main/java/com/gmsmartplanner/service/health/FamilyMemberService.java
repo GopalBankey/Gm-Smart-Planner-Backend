@@ -19,6 +19,7 @@ public interface FamilyMemberService {
             CreateFamilyMemberRequestDTO dto
     );
 
+
     // =====================================
     // GET ALL
     // =====================================
@@ -28,6 +29,7 @@ public interface FamilyMemberService {
 
             String username
     );
+
 
     // =====================================
     // GET BY ID
@@ -39,6 +41,18 @@ public interface FamilyMemberService {
 
             Long memberId
     );
+
+
+    // =====================================
+    // GET EMERGENCY CONTACTS
+    // =====================================
+
+    List<FamilyMemberResponseDTO>
+    getEmergencyFamilyMembers(
+
+            String username
+    );
+
 
     // =====================================
     // UPDATE
@@ -52,6 +66,7 @@ public interface FamilyMemberService {
 
             UpdateFamilyMemberRequestDTO dto
     );
+
 
     // =====================================
     // DELETE

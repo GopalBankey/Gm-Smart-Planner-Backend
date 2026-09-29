@@ -91,4 +91,9 @@ public class User extends BaseEntity {
     )
     private boolean active =
             true;
+
+    @Column(
+            length = 500
+    )
+    private String address;
 }

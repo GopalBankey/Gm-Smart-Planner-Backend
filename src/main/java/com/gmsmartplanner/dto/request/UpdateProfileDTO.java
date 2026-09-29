@@ -19,4 +19,7 @@ public class UpdateProfileDTO {
     private BloodGroup bloodGroup;
 
     private String note;
+
+    private String address;
+
 }

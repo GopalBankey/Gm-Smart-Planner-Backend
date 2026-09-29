@@ -174,5 +174,22 @@ public class UserMapper {
                     dto.getNote()
             );
         }
+
+        // =====================================
+        // ADDRESS
+        // =====================================
+
+        if (
+                dto.getAddress() != null
+                        &&
+                        !dto.getAddress().isBlank()
+        ) {
+
+            user.setAddress(
+                    dto.getAddress()
+            );
+        }
     }
+
+
 }

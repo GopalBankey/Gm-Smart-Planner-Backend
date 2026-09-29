@@ -29,4 +29,5 @@ public class UpdateFamilyMemberRequestDTO {
     private Integer age;
 
     private String notes;
+    private Boolean emergencyContact;
 }

@@ -68,6 +68,10 @@ public class FamilyMemberMapper {
                 true
         );
 
+        member.setEmergencyContact(
+                dto.isEmergencyContact()
+        );
+
         return member;
     }
 
@@ -139,6 +143,13 @@ public class FamilyMemberMapper {
                     dto.getNotes()
             );
         }
+
+        if (dto.getEmergencyContact() != null) {
+
+            member.setEmergencyContact(
+                    dto.getEmergencyContact()
+            );
+        }
     }
 
     // =====================================
@@ -192,6 +203,9 @@ public class FamilyMemberMapper {
 
                 .notes(
                         member.getNotes()
+                )
+                .emergencyContact(
+                        member.isEmergencyContact()
                 )
 
                 .build();

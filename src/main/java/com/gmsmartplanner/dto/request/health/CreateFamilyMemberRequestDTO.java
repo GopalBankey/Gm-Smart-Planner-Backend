@@ -33,4 +33,5 @@ public class CreateFamilyMemberRequestDTO {
     private Integer age;
 
     private String notes;
+    private boolean emergencyContact;
 }
