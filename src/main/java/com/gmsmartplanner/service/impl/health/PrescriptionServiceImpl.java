@@ -7,6 +7,7 @@ import com.gmsmartplanner.entity.User;
 import com.gmsmartplanner.entity.health.Doctor;
 import com.gmsmartplanner.entity.health.Hospital;
 import com.gmsmartplanner.entity.health.Prescription;
+import com.gmsmartplanner.exception.InvalidRequestException;
 import com.gmsmartplanner.exception.ResourceNotFoundException;
 import com.gmsmartplanner.mapper.health.PrescriptionMapper;
 import com.gmsmartplanner.repository.health.DoctorRepository;
@@ -18,6 +19,7 @@ import com.gmsmartplanner.service.health.PrescriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -419,16 +421,15 @@ public class PrescriptionServiceImpl
                                 )
                 );
     }
-
-    // =====================================
-    // UPLOAD PHOTO
-    // =====================================
+// =====================================
+// UPLOAD PHOTO
+// =====================================
 
     private void uploadPrescriptionPhoto(
 
             Prescription prescription,
 
-            org.springframework.web.multipart.MultipartFile file
+            MultipartFile file
 
     ) {
 
@@ -438,7 +439,9 @@ public class PrescriptionServiceImpl
                         file.isEmpty()
         ) {
 
-            return;
+            throw new InvalidRequestException(
+                    "Prescription photo is required"
+            );
         }
 
         prescription.setPrescriptionPhoto(

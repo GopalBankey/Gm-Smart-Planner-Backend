@@ -11,16 +11,49 @@ import java.time.LocalDate;
 @Setter
 public class CreatePrescriptionRequestDTO {
 
+    // =====================================
+    // PRESCRIPTION PHOTO
+    // =====================================
+
+    @NotNull(
+            message = "Prescription photo is required"
+    )
     private MultipartFile prescriptionPhoto;
 
-    @NotNull
+
+    // =====================================
+    // PRESCRIPTION DATE
+    // =====================================
+
+    @NotNull(
+            message = "Prescription date is required"
+    )
     private LocalDate prescriptionDate;
 
-    @NotNull
+
+    // =====================================
+    // DOCTOR
+    // =====================================
+
+    @NotNull(
+            message = "Doctor is required"
+    )
     private Long doctorId;
 
-    @NotNull
+
+    // =====================================
+    // HOSPITAL
+    // =====================================
+
+    @NotNull(
+            message = "Hospital is required"
+    )
     private Long hospitalId;
+
+
+    // =====================================
+    // RELATED DISEASE
+    // =====================================
 
     private String relatedDisease;
 }

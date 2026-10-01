@@ -31,24 +31,19 @@ public class PrescriptionController {
     // CREATE
     // =====================================
 
+
+
     @PostMapping(
-            consumes = {
-                    "multipart/form-data"
-            }
+            consumes = "multipart/form-data"
     )
-    public ResponseEntity<
-            ApiResponse<PrescriptionResponseDTO>
-            >
+    public ResponseEntity<ApiResponse<PrescriptionResponseDTO>>
     create(
 
             Authentication authentication,
 
             @RequestHeader(
-                    value =
-                            "X-ACCESS-ID",
-
-                    required =
-                            false
+                    value = "X-ACCESS-ID",
+                    required = false
             )
             Long accessId,
 
@@ -60,9 +55,7 @@ public class PrescriptionController {
 
         accessUserService
                 .checkCreatePermission(
-
                         authentication.getName(),
-
                         accessId
                 );
 
@@ -84,9 +77,7 @@ public class PrescriptionController {
 
                                                 accessUserService
                                                         .getEffectiveUsername(
-
                                                                 authentication.getName(),
-
                                                                 accessId
                                                         ),
 
